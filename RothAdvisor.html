@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Roth IRA Advisor</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a222c;
+      --panel2: #243040;
+      --ink: #e8eef4;
+      --muted: #8b9aab;
+      --line: #2e3c4d;
+      --accent: #3d9a78;
+      --accent2: #4a7db8;
+      --sell: #c44b4b;
+      --trim: #d17a3a;
+      --buy: #3d9a78;
+      --hold: #6b7c8f;
+      --warn: #c9a227;
+      --radius: 12px;
+      --font: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+      --mono: "SF Mono", "Cascadia Code", "Consolas", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #1a3040 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #1c2838 0%, transparent 50%),
+        var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 28px 20px 60px; }
+    header h1 { margin: 0 0 6px; font-size: 1.65rem; font-weight: 650; letter-spacing: -0.02em; }
+    header p { margin: 0; color: var(--muted); max-width: 70ch; font-size: 0.95rem; }
+    .grid { display: grid; grid-template-columns: 320px 1fr; gap: 18px; margin-top: 22px; align-items: start; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .panel {
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .panel h2 { margin: 0 0 12px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+    .panel h2 small { text-transform: none; letter-spacing: 0; color: var(--muted); font-weight: 400; }
+    aside.panel { position: sticky; top: 20px; }
+    .drop {
+      border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, var(--line));
+      border-radius: var(--radius);
+      padding: 28px 16px;
+      text-align: center;
+      background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .drop.drag { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--panel)); }
+    .drop strong { display: block; margin-bottom: 4px; }
+    .drop span { color: var(--muted); font-size: 0.86rem; }
+    .file-name { margin-top: 10px; font-family: var(--mono); font-size: 0.8rem; color: var(--accent); word-break: break-all; }
+    label.field { display: block; margin: 14px 0 6px; font-size: 0.85rem; color: var(--muted); }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .seg.beta-seg { grid-template-columns: 1fr 1fr; }
+    .seg button {
+      background: var(--panel2); border: 1px solid var(--line); color: var(--ink);
+      border-radius: 8px; padding: 8px 6px; cursor: pointer; font: inherit; font-size: 0.88rem;
+    }
+    .seg button.active { background: color-mix(in srgb, var(--accent) 28%, var(--panel2)); border-color: var(--accent); }
+    .seg button .beta-range { display: block; margin-top: 2px; font-size: 0.68rem; color: var(--muted); font-family: var(--mono); font-weight: 400; }
+    .seg button.active .beta-range { color: #9fe0c4; }
+    .sidebar-beta-guide { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); }
+    .sidebar-beta-guide p { margin: 0 0 8px; color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
+    .sidebar-beta-guide ul { margin: 0; padding-left: 0; list-style: none; }
+    .sidebar-beta-guide li { display: flex; gap: 8px; align-items: baseline; margin: 5px 0; font-size: 0.78rem; color: var(--ink); }
+    .sidebar-beta-guide li .rng { font-family: var(--mono); color: var(--muted); min-width: 5.8rem; }
+    .sum-pill { display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-family: var(--mono); }
+    .sum-ok { background: color-mix(in srgb, var(--buy) 22%, transparent); color: #9fe0c4; }
+    .sum-bad { background: color-mix(in srgb, var(--sell) 22%, transparent); color: #f0a8a8; }
+
+    .run-btn {
+      width: 100%; margin-top: 20px; padding: 13px 14px; border-radius: 10px; border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #06120d;
+      font: inherit; font-weight: 700; font-size: 0.95rem; cursor: pointer; text-align: center;
+      display: flex; flex-direction: column; gap: 2px; align-items: center;
+    }
+    .run-btn .sub { font-weight: 400; font-size: 0.74rem; color: #0b1f17; opacity: 0.8; }
+    .run-btn:disabled { background: var(--panel2); color: var(--muted); cursor: not-allowed; }
+    .run-btn:disabled .sub { color: var(--muted); }
+    .run-btn.loading { background: var(--panel2); color: var(--ink); cursor: wait; }
+
+    .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px; }
+    @media (max-width: 1050px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+    .kpi .lbl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .kpi .val { font-size: 1.15rem; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; white-space: nowrap; }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: var(--ink); }
+    th.sortable .arrow { opacity: 0.6; margin-left: 3px; }
+    td.mono, th.num, td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.73rem; font-weight: 700; letter-spacing: 0.04em; }
+    .badge.BUY { background: color-mix(in srgb, var(--buy) 25%, transparent); color: #9fe0c4; }
+    .badge.SELL { background: color-mix(in srgb, var(--sell) 25%, transparent); color: #f0b0b0; }
+    .badge.TRIM { background: color-mix(in srgb, var(--trim) 25%, transparent); color: #f0c49a; }
+    .badge.CONSOLIDATE { background: color-mix(in srgb, var(--trim) 25%, transparent); color: #f0c49a; }
+    .badge.HOLD { background: color-mix(in srgb, var(--hold) 25%, transparent); color: #c5d0db; }
+
+    .risk-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .risk-badge.Low { background: color-mix(in srgb, var(--buy) 20%, transparent); color: #9fe0c4; }
+    .risk-badge.Medium { background: color-mix(in srgb, var(--warn) 25%, transparent); color: #f0dca0; }
+    .risk-badge.High { background: color-mix(in srgb, var(--sell) 22%, transparent); color: #f0b0b0; }
+    .risk-badge.VeryHigh { background: color-mix(in srgb, var(--sell) 35%, transparent); color: #ff9a9a; }
+    .risk-badge.Unknown { background: var(--panel2); color: var(--muted); }
+    .beta-guide { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+    .beta-guide p { margin: 0 0 10px; color: var(--muted); font-size: 0.88rem; }
+    .beta-guide table { font-size: 0.85rem; }
+    .beta-guide td { padding: 7px 10px; }
+    .beta-guide td:first-child { font-family: var(--mono); white-space: nowrap; width: 9.5rem; }
+
+    .conf-tag { font-size: 0.72rem; padding: 1px 7px; border-radius: 5px; background: var(--panel2); color: var(--muted); }
+    .dir { font-weight: 700; font-size: 0.85rem; }
+    .dir.Bullish { color: #7fe0b4; }
+    .dir.Leaning.up, .dir["Leaning up"] { color: #9fd9a8; }
+    .dir-up { color: #9fd9a8; }
+    .dir-neutral { color: var(--muted); }
+    .dir-down { color: #e0b088; }
+    .dir-bearish { color: #e08a8a; }
+
+    .diag, .flag-list { margin: 0; padding-left: 18px; color: var(--ink); }
+    .diag li, .flag-list li { margin: 6px 0; color: var(--muted); font-size: 0.9rem; }
+    .diag li::marker, .flag-list li::marker { color: var(--warn); }
+    .bars { display: grid; gap: 10px; margin-top: 4px; }
+    .bar-row { display: grid; grid-template-columns: 110px 1fr 50px; gap: 8px; align-items: center; font-size: 0.85rem; }
+    .track { height: 10px; background: var(--panel2); border-radius: 999px; overflow: hidden; position: relative; }
+    .fill-cur { height: 100%; background: var(--accent2); position: absolute; left: 0; top: 0; opacity: 0.85; }
+    .fill-cur.flagged { background: var(--sell); }
+    .fill-tgt { height: 100%; border-right: 2px solid #e8eef4; position: absolute; left: 0; top: 0; width: 0; pointer-events: none; }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+    .empty { padding: 48px 20px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--radius); }
+    .totals { display: flex; gap: 18px; margin-top: 10px; flex-wrap: wrap; font-family: var(--mono); font-size: 0.82rem; }
+    footer { margin-top: 18px; color: var(--muted); font-size: 0.78rem; line-height: 1.6; }
+    details { margin-top: 0; }
+    details summary { cursor: pointer; color: var(--muted); }
+    #holdings, #outlookWrap { max-height: 480px; overflow: auto; }
+    .news-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 0.87rem; }
+    .news-item:last-child { border-bottom: none; }
+    .news-item .sym { font-family: var(--mono); color: var(--accent2); min-width: 46px; }
+    .news-item a { color: var(--ink); text-decoration: none; }
+    .news-item a:hover { text-decoration: underline; }
+    .news-item .pub { color: var(--muted); font-size: 0.78rem; }
+    .sent-pos { color: #9fe0c4; }
+    .sent-neg { color: #e0a0a0; }
+    .sent-neu { color: var(--muted); }
+    .note-box {
+      background: color-mix(in srgb, var(--warn) 10%, var(--panel));
+      border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line));
+      border-radius: 8px; padding: 10px 12px; font-size: 0.85rem; color: var(--ink); margin-bottom: 10px;
+    }
+    .drift-panel { border-color: color-mix(in srgb, var(--accent2) 40%, var(--line)); }
+    .drift-list { margin: 0; padding-left: 18px; }
+    .drift-list li { margin: 4px 0; font-size: 0.88rem; color: var(--ink); }
+    .clear-link { color: var(--muted); font-size: 0.78rem; cursor: pointer; text-decoration: underline; background: none; border: none; font: inherit; padding: 0; }
+
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 50;
+    }
+    .loading-card { width: min(560px, 92vw); background: #1a222c; border: 1px solid var(--line); border-radius: 16px; padding: 28px 26px; text-align: center; }
+    .loading-card h3 { margin: 0 0 4px; font-size: 1.05rem; }
+    .chart-wrap { margin: 18px 0 10px; }
+    .chart-wrap svg { width: 100%; height: 120px; display: block; }
+    .loading-pct { font-family: var(--mono); font-size: 1.4rem; font-weight: 700; color: var(--accent); margin-top: 6px; }
+    .loading-text { margin-top: 8px; color: var(--muted); font-size: 0.92rem; min-height: 1.4em; }
+    .loading-sub { margin-top: 10px; color: var(--muted); font-size: 0.74rem; }
+
+    .stress-table td.num, .stress-table th.num { white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Roth IRA Advisor — Manager Desk</h1>
+      <p class="muted" style="margin:0 0 10px;font-size:0.85rem">Built by <strong>Akshay Bhatkhande</strong> · Coded with AI (Cursor)</p>
+      <p>Drop an E*TRADE <code>PortfolioDownload.csv</code>, set your target beta and ETF/Fund/Stock mix, then click <strong>Run analysis</strong>.
+      The tool researches <strong>every holding</strong> in your book (news, SEC-derived fundamentals, EOD price history), builds a next-day
+      Market Outlook and Risk Assessment for each position, and returns one prioritized buy/sell ticket list — the way a portfolio manager,
+      market analyst, and research desk would review your account. Runs entirely in your browser; your CSV is never uploaded anywhere.</p>
+    </header>
+
+    <div class="grid">
+      <aside class="panel" id="controls">
+        <h2>Portfolio CSV</h2>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Drop CSV here">
+          <strong>Drop CSV here</strong>
+          <span>or click to choose a file</span>
+          <div class="file-name" id="fileName"></div>
+        </div>
+        <input type="file" id="fileInput" accept=".csv,text/csv" hidden />
+
+        <h2 style="margin-top:20px">Target beta / risk</h2>
+        <div class="seg beta-seg" id="volSeg">
+          <button type="button" data-vol="Low">Low<span class="beta-range">β below 0.70</span></button>
+          <button type="button" data-vol="Medium">Medium<span class="beta-range">β 0.70 – 1.20</span></button>
+          <button type="button" data-vol="High" class="active">High<span class="beta-range">β 1.20 – 1.70</span></button>
+          <button type="button" data-vol="VeryHigh">Very high<span class="beta-range">β above 1.70</span></button>
+        </div>
+        <div class="sidebar-beta-guide">
+          <p>Beta (β) = how hard holdings tend to move vs the market. Market β = <strong>1.00</strong>.</p>
+          <ul>
+            <li><span class="rng">&lt; 0.70</span><span class="risk-badge Low">Low</span> more defensive</li>
+            <li><span class="rng">0.70 – 1.20</span><span class="risk-badge Medium">Medium</span> with the market</li>
+            <li><span class="rng">1.20 – 1.70</span><span class="risk-badge High">High</span> amplifies swings</li>
+            <li><span class="rng">&gt; 1.70</span><span class="risk-badge VeryHigh">Very high</span> much more volatile</li>
+          </ul>
+        </div>
+
+        <h2 style="margin-top:20px">Holding-type split</h2>
+        <p class="muted" id="splitHint" style="margin:0 0 8px;font-size:0.78rem">Recommended for High β — tweak if you want.</p>
+        <label class="field row"><span>ETF %</span><strong id="etfVal">50</strong></label>
+        <input type="range" id="etf" min="0" max="100" step="5" value="50" />
+        <label class="field row"><span>Mutual fund %</span><strong id="fundVal">15</strong></label>
+        <input type="range" id="fund" min="0" max="100" step="5" value="15" />
+        <label class="field row"><span>Stock %</span><strong id="stockVal">35</strong></label>
+        <input type="range" id="stock" min="0" max="100" step="5" value="35" />
+        <label class="field row"><span>Cash %</span><strong id="cashVal">0</strong></label>
+        <input type="range" id="cash" min="0" max="100" step="5" value="0" />
+        <div id="mixSum" class="sum-pill sum-ok">Split = 100%</div>
+
+        <label class="field row"><span>Max single stock %</span><strong id="maxStockVal">8</strong></label>
+        <input type="range" id="maxStock" min="3" max="15" step="1" value="8" />
+
+        <label class="field row"><span>Min useful position $</span><strong id="minPosVal">150</strong></label>
+        <input type="range" id="minPos" min="50" max="500" step="25" value="150" />
+
+        <button type="button" id="runBtn" class="run-btn" disabled>
+          <span>Run analysis</span>
+          <span class="sub">Review my book like a manager</span>
+        </button>
+        <p class="muted" style="margin-top:10px">Researches every holding (news + fundamentals + price history where public data exists).
+        For a full book this typically takes 60–120 seconds.</p>
+      </aside>
+
+      <main>
+        <div id="empty" class="empty">Drop your E*TRADE portfolio CSV, set your mix, then click Run analysis.</div>
+        <div id="results" hidden>
+
+          <div class="kpis" id="kpis"></div>
+
+          <div class="panel drift-panel" id="driftPanel" hidden>
+            <h2>Since your last review</h2>
+            <ul class="drift-list" id="driftList"></ul>
+            <button type="button" class="clear-link" id="clearHistoryBtn">Clear saved history for this account</button>
+          </div>
+
+          <div class="panel" id="bookHealthPanel">
+            <h2>Book health</h2>
+            <ul class="diag" id="diagnostics"></ul>
+            <p class="muted" id="freshnessLine" style="margin-top:10px"></p>
+          </div>
+
+          <div class="panel" id="riskPanel">
+            <h2>Risk assessment</h2>
+            <div id="riskHeadline" style="margin-bottom:12px"></div>
+            <div class="beta-guide" id="betaGuide">
+              <h2>Beta guide</h2>
+              <p>Beta (β) is how hard a holding tends to move versus the overall market. Market β = <strong>1.00</strong>. Higher β = more risk; lower β = more defensive.</p>
+              <table>
+                <thead><tr><th>Beta range</th><th>Risk level</th><th>What it means</th></tr></thead>
+                <tbody>
+                  <tr><td>below 0.70</td><td><span class="risk-badge Low">Low</span></td><td>Usually moves less than the market — more defensive</td></tr>
+                  <tr><td>0.70 – 1.20</td><td><span class="risk-badge Medium">Medium</span></td><td>Moves roughly with the market</td></tr>
+                  <tr><td>1.20 – 1.70</td><td><span class="risk-badge High">High</span></td><td>Amplifies market swings</td></tr>
+                  <tr><td>above 1.70</td><td><span class="risk-badge VeryHigh">Very high</span></td><td>Much more volatile than the market</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <h2 style="margin-top:16px">Sector / industry concentration</h2>
+            <div class="bars" id="sectorBars"></div>
+            <h2 style="margin-top:16px">Drawdown stress test</h2>
+            <div id="stressTable"></div>
+          </div>
+
+          <div class="panel" id="pulsePanel">
+            <h2>Market pulse <small>— top headlines across your researched holdings</small></h2>
+            <div id="pulseList"></div>
+          </div>
+
+          <div class="panel" id="fundaPanel">
+            <h2>Fundamentals flags</h2>
+            <ul class="flag-list" id="fundaList"></ul>
+          </div>
+
+          <div class="panel" id="outlookPanel">
+            <h2>Market outlook <small>— every holding, next session</small></h2>
+            <div id="outlookWrap"></div>
+          </div>
+
+          <div class="panel" id="actionsPanel">
+            <h2>Do now</h2>
+            <div id="actionNotes"></div>
+            <div id="actionTable"></div>
+            <div class="totals" id="actionTotals"></div>
+          </div>
+
+          <details class="panel" id="holdingsPanel">
+            <summary>Current holdings</summary>
+            <div id="holdings" style="margin-top:12px"></div>
+          </details>
+
+          <footer>
+            <p style="margin:0 0 8px"><strong>Built by Akshay Bhatkhande</strong> · Coded with AI (Cursor). Product direction, requirements, and portfolio workflow by Akshay; implementation assisted by AI.</p>
+            Educational portfolio-construction and research tooling for a long-horizon Roth — not a licensed financial advisor and not personalized
+            investment advice. Market Outlook rows are probabilistic direction + range estimates with a stated confidence level, built from public
+            end-of-day data, news sentiment, and SEC-derived fundamentals — not a guaranteed next-day price; no source, free or paid, can promise one.
+            Recommendations are limited to buying/selling/trimming stocks, ETFs, and mutual funds — never options, calls, puts, or any derivatives
+            strategy. Share counts are whole shares only (no fractionals). Mutual fund orders execute once daily at the next-calculated NAV, not
+            intraday. In a cash IRA, proceeds from a same-day sell may not have settled yet to fund a same-day buy (T+1). Review-to-review history is
+            saved only in this browser's local storage and is never sent anywhere.
+          </footer>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="loading-overlay" id="loadingOverlay" hidden>
+    <div class="loading-card">
+      <h3>Running the desk</h3>
+      <div class="chart-wrap">
+        <svg id="loadingChart" viewBox="0 0 400 100" preserveAspectRatio="none">
+          <line x1="0" y1="20" x2="400" y2="20" stroke="#2e3c4d" stroke-width="0.6" opacity="0.6"></line>
+          <line x1="0" y1="50" x2="400" y2="50" stroke="#2e3c4d" stroke-width="0.6" opacity="0.6"></line>
+          <line x1="0" y1="80" x2="400" y2="80" stroke="#2e3c4d" stroke-width="0.6" opacity="0.6"></line>
+          <polyline id="chartLine" points="" fill="none" stroke="#3d9a78" stroke-width="2"></polyline>
+          <rect id="chartMask" x="0" y="0" width="400" height="100" fill="#1a222c"></rect>
+        </svg>
+      </div>
+      <div class="loading-pct" id="loadingPct">0%</div>
+      <div class="loading-text" id="loadingText">Opening the order book…</div>
+      <div class="loading-sub" id="loadingSub"></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  /* ===================== Constants / classification ===================== */
+  const KNOWN_ETFS = new Set(["VTI","VXUS","VOO","SPY","QQQ","IVV","VEA","VWO","IEFA","IEMG","BND","AGG","VCIT","BNDX","VYM","VYMI","SCHD","VIG","XLC","XLK","XLF","XLE","XLV","XLI","XLY","XLP","XLU","XLB","XLRE","RWO","VNQ","GLD","IAU","ARKK","IWM","DIA","VT"]);
+  const CORE_ETFS = {
+    VTI: { role: "us_total", label: "US total stock market" },
+    VXUS: { role: "intl", label: "International stocks" },
+    VOO: { role: "us_large", label: "S&P 500" },
+    FXAIX: { role: "us_large", label: "Fidelity 500 Index" },
+    VT: { role: "world", label: "World stock" },
+    BND: { role: "bond", label: "US bonds" },
+    AGG: { role: "bond", label: "US aggregate bonds" },
+    VCIT: { role: "bond", label: "Intermediate corporate bonds" },
+    VYM: { role: "dividend", label: "US high dividend" },
+    VYMI: { role: "dividend_intl", label: "Intl high dividend" },
+    SCHD: { role: "dividend", label: "US dividend equity" },
+    QQQ: { role: "growth", label: "Nasdaq-100" },
+  };
+  const BOND_LIKE = new Set(["TAIBX","PHYZX","FSTYX","NCRLX","LBNDX","GILHX","FFRHX","FADMX","VCIT","BND","AGG"]);
+  const HIGH_VOL = new Set(["NVDA","AMD","MU","MRVL","SITM","QUBT","SNAP","RIVN","SOFI","BB","BBIO","ORCL","INTC","TSLA","SMCI"]);
+  const DEFENSIVE = new Set(["JNJ","KO","CLX","WMT","COST","PG","PEP","MRK","ABBV","T","NEE","OHI"]);
+  const KEEP_PREFER = new Set(["MSFT","AAPL","AMZN","GOOGL","GOOG","META","COST","JNJ","VTI","VXUS","VOO","FXAIX","SCHD","VYM"]);
+
+  // Approximate betas vs the broad US market (β = 1.00). Used when live beta isn't available in-browser.
+  const KNOWN_BETAS = {
+    VTI: 1.00, VOO: 1.00, SPY: 1.00, IVV: 1.00, FXAIX: 1.00, VT: 0.95,
+    VXUS: 0.85, VEA: 0.85, VWO: 0.95, IEFA: 0.85, IEMG: 0.95,
+    QQQ: 1.15, XLK: 1.20, XLC: 1.05, XLF: 1.10, XLE: 1.15, XLV: 0.75, XLI: 1.05, XLY: 1.15, XLP: 0.55, XLU: 0.45, XLB: 1.10, XLRE: 0.90,
+    BND: 0.10, AGG: 0.10, VCIT: 0.15, BNDX: 0.10, TAIBX: 0.15, PHYZX: 0.20, FSTYX: 0.20, NCRLX: 0.15, LBNDX: 0.15, GILHX: 0.15, FFRHX: 0.20, FADMX: 0.20,
+    VYM: 0.85, VYMI: 0.80, SCHD: 0.85, VIG: 0.85, RWO: 0.90, VNQ: 0.90,
+    AAPL: 1.10, MSFT: 1.05, AMZN: 1.20, GOOGL: 1.10, GOOG: 1.10, META: 1.25, NVDA: 1.75, AMD: 1.65, MU: 1.55, MRVL: 1.50, ORCL: 1.25, INTC: 1.20, TSM: 1.30, AVGO: 1.35, CRM: 1.25, CSCO: 0.90, HPE: 1.15, HPQ: 1.10,
+    JNJ: 0.55, KO: 0.55, WMT: 0.55, COST: 0.75, CLX: 0.45, ABBV: 0.55, T: 0.50, NEE: 0.55, OHI: 0.70, PG: 0.50, PEP: 0.55, MRK: 0.55,
+    JPM: 1.10, BAC: 1.20, WFC: 1.15, GS: 1.25, BLK: 1.15, BANC: 1.25,
+    XOM: 0.95, CVX: 0.95, SHEL: 0.90, CNX: 1.25, AEM: 0.70, FFGCX: 1.10,
+    DIS: 1.15, SONY: 1.05, NFLX: 1.30, SBUX: 0.95, NKE: 1.05, F: 1.25, TM: 0.85, RACE: 1.05, TTWO: 1.00, FOX: 0.90,
+    SNAP: 1.40, RIVN: 1.80, SOFI: 1.70, BB: 1.50, BBIO: 1.60, QUBT: 2.40, SITM: 1.70, PLTR: 1.60, TSLA: 1.80,
+    UPS: 0.95, RTX: 0.85, LMT: 0.70, CAT: 1.15, DE: 1.15, SPGI: 1.00, AIZ: 0.85, IQV: 0.95, NUE: 1.20, ACT: 0.90, TMUS: 0.70, ACI: 0.55,
+    PRDGX: 0.95, OAKMX: 0.95, CIVVX: 0.90, MPIEX: 0.85, GCISX: 0.95, ABYSX: 0.95, MBGL: 1.10,
+  };
+
+  const BUY_MENU = {
+    Low: {
+      ETF: [
+        { symbol: "VTI", why: "Good because one fund owns the whole US market — growth without betting on a single company." },
+        { symbol: "VXUS", why: "Good because overseas stocks diversify US-only risk and can lead in different cycles." },
+        { symbol: "BND", why: "Good because broad bonds cushion drawdowns when you chose a low-vol Roth." },
+        { symbol: "SCHD", why: "Good because quality dividend companies historically soften declines vs speculative names." },
+      ],
+      Fund: [{ symbol: "FXAIX", why: "Good because rock-bottom fees mean more of the S&P 500 return stays in your Roth." }],
+      Stock: [
+        { symbol: "JNJ", why: "Good because a defensive healthcare giant tends to hold up better in rough markets." },
+        { symbol: "KO", why: "Good because staples demand is steady — useful ballast inside a stock sleeve." },
+        { symbol: "WMT", why: "Good because durable cash flow and scale support steadier compounding." },
+      ],
+    },
+    Medium: {
+      ETF: [
+        { symbol: "VTI", why: "Good because broad US equity is the main long-term growth engine for a decades-long Roth." },
+        { symbol: "VXUS", why: "Good because international exposure reduces reliance on one country's market." },
+        { symbol: "VYM", why: "Good because a dividend tilt adds income-producing companies without abandoning equities." },
+        { symbol: "VOO", why: "Good because S&P 500 exposure is simple, cheap, and historically strong for long horizons." },
+      ],
+      Fund: [{ symbol: "FXAIX", why: "Good because ultra-low-cost S&P indexing maximizes compounding inside a tax-free Roth." }],
+      Stock: [
+        { symbol: "MSFT", why: "Good because a quality mega-cap with diversified cash flows can compound for decades." },
+        { symbol: "AAPL", why: "Good because a wide-moat consumer platform has a long history of durable earnings power." },
+        { symbol: "AMZN", why: "Good because scale in commerce + cloud supports long runway growth for a young Roth." },
+        { symbol: "COST", why: "Good because membership-driven retail has resilient demand and steady compounding traits." },
+      ],
+    },
+    High: {
+      ETF: [
+        { symbol: "VTI", why: "Good because even at high risk you still want a broad US core so one stock can't sink the plan." },
+        { symbol: "VXUS", why: "Good because global diversification improves odds when US growth pauses." },
+        { symbol: "QQQ", why: "Good because Nasdaq-100 adds growth tilt matching high-vol preference (accept bigger swings)." },
+        { symbol: "XLK", why: "Good because a tech sector ETF concentrates growth without picking one fragile name." },
+      ],
+      Fund: [{ symbol: "FXAIX", why: "Good because cheap S&P beta anchors satellites so the Roth isn't only speculative bets." }],
+      Stock: [
+        { symbol: "NVDA", why: "Good because it fits high-conviction growth — size carefully so one name doesn't dominate." },
+        { symbol: "AMD", why: "Good because semiconductor growth can amplify upside inside a capped stock sleeve." },
+        { symbol: "AMZN", why: "Good because long-run growth potential fits a high-vol, multi-decade Roth." },
+        { symbol: "MSFT", why: "Good because quality growth anchors the stock sleeve when other names are more speculative." },
+      ],
+    },
+  };
+
+  const LOADING_LINES = [
+    "Opening the order book…",
+    "Checking the tape across the whole book…",
+    "Reading the latest headlines…",
+    "Pulling SEC filings off the wire…",
+    "Stress-testing the bond sleeve…",
+    "Hunting for stub positions under the desk…",
+    "Rebalancing the risk budget…",
+    "Running tomorrow's price range on every name…",
+    "Sizing whole shares — no fractionals…",
+    "Cross-checking insider activity…",
+    "Mapping sector concentration…",
+    "Comparing this review to your last one…",
+    "Writing the morning ticket list…",
+    "Double-checking nothing got skipped…",
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+  /* ===================== CSV parsing ===================== */
+  function toFloat(v) {
+    if (v == null || v === "") return 0;
+    const n = parseFloat(String(v).replace(/,/g, "").replace(/%/g, "").trim());
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function parseCSVLine(line) {
+    const out = [];
+    let cur = "";
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (inQ) {
+        if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+        else cur += c;
+      } else if (c === '"') inQ = true;
+      else if (c === ",") { out.push(cur); cur = ""; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function classifyType(symbol) {
+    if (KNOWN_ETFS.has(symbol)) return "ETF";
+    if (/^[A-Z]{4}X$/.test(symbol)) return "Fund";
+    return "Stock";
+  }
+
+  function classifyVol(symbol, type) {
+    if (BOND_LIKE.has(symbol)) return "low";
+    if (HIGH_VOL.has(symbol)) return "high";
+    if (DEFENSIVE.has(symbol)) return "low";
+    if (type === "Fund") return "medium";
+    if (type === "ETF") return (symbol === "VCIT" || symbol === "BND" || symbol === "AGG") ? "low" : "medium";
+    return "medium";
+  }
+
+  function classifyRole(symbol) {
+    if (CORE_ETFS[symbol]) return CORE_ETFS[symbol].role;
+    if (BOND_LIKE.has(symbol)) return "bond";
+    if (["XOM","CVX","SHEL","CNX","AEM","FFGCX"].includes(symbol)) return "energy_materials";
+    if (["AMD","NVDA","MU","MRVL","SITM","INTC","ORCL","MSFT","AAPL","AMZN","CSCO","HPE","HPQ"].includes(symbol)) return "tech";
+    if (["JNJ","ABBV","IQV","BBIO"].includes(symbol)) return "healthcare";
+    if (["BAC","WFC","BANC"].includes(symbol)) return "financials";
+    if (DEFENSIVE.has(symbol)) return "defensive";
+    return "other";
+  }
+
+  function classifySectorBucket(role) {
+    const map = {
+      us_total: "Diversified", us_large: "Diversified", intl: "Diversified", world: "Diversified",
+      dividend: "Diversified", dividend_intl: "Diversified",
+      bond: "Bonds/Income",
+      tech: "Tech", growth: "Tech",
+      energy_materials: "Energy/Materials",
+      healthcare: "Healthcare",
+      financials: "Financials",
+      defensive: "Consumer/Defensive",
+    };
+    return map[role] || "Other";
+  }
+
+  function parseEtradeCSV(text) {
+    const lines = text.split(/\r?\n/);
+    const account = { account: "", net_value: 0, cash: 0, total_gain: 0, total_gain_pct: 0 };
+
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].startsWith("Account,Net Account Value")) {
+        const row = parseCSVLine(lines[i + 1] || "");
+        account.account = row[0] || "";
+        account.net_value = toFloat(row[1]);
+        account.total_gain = toFloat(row[2]);
+        account.total_gain_pct = toFloat(row[3]);
+        account.cash = toFloat(row[7]);
+        break;
+      }
+    }
+
+    const headerIdx = lines.findIndex((l) => l.startsWith("Symbol,Last Price"));
+    if (headerIdx < 0) throw new Error("Could not find position header. Use an E*TRADE PortfolioDownload.csv export.");
+
+    const positions = [];
+    for (let i = headerIdx + 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line || line.startsWith("TOTAL") || line.startsWith("Generated")) break;
+      let cols = parseCSVLine(line);
+      if (cols[0] && cols[0].toUpperCase() === "CASH") {
+        const cashVal = toFloat(cols[9] || cols[cols.length - 1]);
+        if (cashVal) account.cash = cashVal;
+        continue;
+      }
+      if (cols.length < 10) cols = cols.concat(Array(10 - cols.length).fill(""));
+      const symbol = String(cols[0] || "").trim().toUpperCase();
+      if (!symbol || symbol === "NAN") continue;
+      const value = toFloat(cols[9]);
+      if (value <= 0) continue;
+      const type = classifyType(symbol);
+      const totalGainPct = toFloat(cols[8]);
+      positions.push({
+        symbol,
+        last_price: toFloat(cols[1]),
+        change: toFloat(cols[2]),
+        change_pct: toFloat(cols[3]),
+        quantity: toFloat(cols[4]),
+        price_paid: toFloat(cols[5]),
+        day_gain: toFloat(cols[6]),
+        total_gain: toFloat(cols[7]),
+        total_gain_pct: totalGainPct,
+        value,
+        holding_type: type,
+        vol_bucket: classifyVol(symbol, type),
+        role: classifyRole(symbol),
+        is_core: Boolean(CORE_ETFS[symbol]) || symbol === "FXAIX",
+        is_tiny: value < 100,
+        is_loser: totalGainPct <= -20,
+      });
+    }
+
+    const investable = positions.reduce((s, p) => s + p.value, 0);
+    positions.forEach((p) => { p.weight_pct = investable ? (p.value / investable) * 100 : 0; });
+    if (!account.net_value) account.net_value = investable + (account.cash || 0);
+
+    return { positions, account };
+  }
+
+  function engineVol(vol) {
+    // Buy menus are keyed Low/Medium/High; "Very high" beta preference uses the High menu.
+    return vol === "VeryHigh" ? "High" : vol;
+  }
+  function bondEquityTargets(vol) {
+    return ({ Low: [70, 30], Medium: [90, 10], High: [98, 2], VeryHigh: [100, 0] })[vol] || [98, 2];
+  }
+  function betaTargetLabel(vol) {
+    return ({
+      Low: "Low (β below 0.70)",
+      Medium: "Medium (β 0.70 – 1.20)",
+      High: "High (β 1.20 – 1.70)",
+      VeryHigh: "Very high (β above 1.70)",
+    })[vol] || vol;
+  }
+  // Recommended ETF / Fund / Stock / Cash mix (% of net account) by target beta.
+  const RECOMMENDED_SPLITS = {
+    Low:      { etf: 35, fund: 30, stock: 20, cash: 15 },
+    Medium:   { etf: 45, fund: 20, stock: 30, cash: 5 },
+    High:     { etf: 50, fund: 15, stock: 30, cash: 5 },
+    VeryHigh: { etf: 40, fund: 5,  stock: 55, cash: 0 },
+  };
+
+  /* ===================== Research layer (free, keyless, CORS APIs) ===================== */
+  function hasSessionStorage() { try { return typeof sessionStorage !== "undefined"; } catch (e) { return false; } }
+  function cacheGet(key) {
+    if (!hasSessionStorage()) return undefined;
+    try { const raw = sessionStorage.getItem(key); return raw == null ? undefined : JSON.parse(raw); }
+    catch (e) { return undefined; }
+  }
+  function cacheSet(key, val) {
+    if (!hasSessionStorage()) return;
+    try { sessionStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* quota or disabled storage — ignore */ }
+  }
+
+  function sleep(ms) { return new Promise((res) => setTimeout(res, ms)); }
+
+  async function fetchJSON(url, timeoutMs) {
+    const ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    const t = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs || 9000) : null;
+    try {
+      const res = await fetch(url, ctrl ? { signal: ctrl.signal } : {});
+      if (!res.ok) return null;
+      return await res.json().catch(() => null);
+    } catch (e) {
+      return null;
+    } finally {
+      if (t) clearTimeout(t);
+    }
+  }
+
+  let _lastQL = 0;
+  async function throttleQL() {
+    const wait = 550 - (Date.now() - _lastQL);
+    if (wait > 0) await sleep(wait);
+    _lastQL = Date.now();
+  }
+
+  async function fetchNews(symbol) {
+    const key = "ql_news:" + symbol;
+    const cached = cacheGet(key);
+    if (cached !== undefined) return cached;
+    await throttleQL();
+    const data = await fetchJSON(`https://api.quotelinks.com/v1/news/${encodeURIComponent(symbol)}`);
+    cacheSet(key, data);
+    return data;
+  }
+
+  async function fetchFinancials(symbol) {
+    const key = "ql_fin:" + symbol;
+    const cached = cacheGet(key);
+    if (cached !== undefined) return cached;
+    await throttleQL();
+    const data = await fetchJSON(`https://api.quotelinks.com/v1/financials/${encodeURIComponent(symbol)}?period=quarterly`);
+    cacheSet(key, data);
+    return data;
+  }
+
+  async function fetchFinNode(symbol) {
+    const key = "finnode:" + symbol;
+    const cached = cacheGet(key);
+    if (cached !== undefined) return cached;
+    const data = await fetchJSON(`https://www.fin-node.net/api/v1/${encodeURIComponent(symbol)}.json`);
+    cacheSet(key, data);
+    return data;
+  }
+
+  function buyCandidateSymbols(volatility) {
+    const menu = BUY_MENU[engineVol(volatility)] || BUY_MENU.High;
+    const set = new Set(["VTI", "VXUS", "VOO", "FXAIX", "QQQ", "BND", "SCHD", "VYM", "XLK"]);
+    ["ETF", "Fund", "Stock"].forEach((t) => (menu[t] || []).forEach((o) => set.add(o.symbol)));
+    return [...set];
+  }
+
+  async function researchAllHoldings(positions, onProgress, extraSymbols) {
+    const typeMap = {};
+    positions.forEach((p) => { typeMap[p.symbol] = p.holding_type; });
+    const seen = new Set();
+    const symbols = [];
+    positions.forEach((p) => { if (!seen.has(p.symbol)) { seen.add(p.symbol); symbols.push(p.symbol); } });
+    (extraSymbols || []).forEach((sym) => {
+      const s = String(sym || "").toUpperCase();
+      if (s && !seen.has(s)) { seen.add(s); symbols.push(s); typeMap[s] = classifyType(s); }
+    });
+    const total = symbols.length;
+    const researchMap = {};
+    const meta = { quotelinksUpdated: null, finnodeUpdated: null };
+
+    for (let i = 0; i < symbols.length; i++) {
+      const symbol = symbols[i];
+      onProgress && onProgress({ i: i + 1, total, symbol, stage: "news" });
+      const news = await fetchNews(symbol);
+      if (news && news.updated && !meta.quotelinksUpdated) meta.quotelinksUpdated = news.updated;
+
+      let financials = null;
+      if (typeMap[symbol] === "Stock") {
+        onProgress && onProgress({ i: i + 1, total, symbol, stage: "financials" });
+        financials = await fetchFinancials(symbol);
+      }
+
+      onProgress && onProgress({ i: i + 1, total, symbol, stage: "finnode" });
+      const finnode = await fetchFinNode(symbol);
+      if (finnode && finnode.updated && !meta.finnodeUpdated) meta.finnodeUpdated = finnode.updated;
+
+      researchMap[symbol] = { news, financials, finnode };
+    }
+    return { researchMap, meta };
+  }
+
+  /* ===================== Next-day Market Outlook ===================== */
+  function computeMomentumVol(prices) {
+    if (!Array.isArray(prices) || prices.length < 21) return null;
+    const closes = prices.map((p) => (typeof p.Close === "number" ? p.Close : null)).filter((c) => c != null);
+    if (closes.length < 21) return null;
+    const n = closes.length;
+    const last = closes[n - 1];
+    const d5 = closes[n - 6];
+    const d20 = closes[n - 21];
+    const mom5 = d5 ? ((last - d5) / d5) * 100 : null;
+    const mom20 = d20 ? ((last - d20) / d20) * 100 : null;
+    const rets = [];
+    for (let i = n - 20; i < n; i++) {
+      if (i > 0 && closes[i - 1]) rets.push((closes[i] - closes[i - 1]) / closes[i - 1]);
+    }
+    if (!rets.length) return null;
+    const mean = rets.reduce((s, x) => s + x, 0) / rets.length;
+    const variance = rets.reduce((s, x) => s + (x - mean) * (x - mean), 0) / rets.length;
+    const vol20 = Math.sqrt(variance) * 100;
+    return { mom5, mom20, vol20, lastClose: last };
+  }
+
+  function computeSentimentTilt(newsPayload) {
+    if (!newsPayload || !Array.isArray(newsPayload.items) || !newsPayload.items.length) return null;
+    const cutoff = Date.now() - 14 * 24 * 3600 * 1000;
+    const recent = newsPayload.items
+      .filter((it) => it.published && Date.parse(it.published) >= cutoff && it.sentiment && typeof it.sentiment.score === "number")
+      .sort((a, b) => Date.parse(b.published) - Date.parse(a.published))
+      .slice(0, 10);
+    if (!recent.length) return null;
+    const avg = recent.reduce((s, it) => s + it.sentiment.score, 0) / recent.length;
+    return { avg, count: recent.length, items: recent };
+  }
+
+  function computeFundamentalsTrend(finPayload) {
+    if (!finPayload || !Array.isArray(finPayload.periods) || finPayload.periods.length < 2) return null;
+    const p0 = finPayload.periods[0], p1 = finPayload.periods[1];
+    if (p0.revenue == null || p1.revenue == null || p0.net_income == null || p1.net_income == null) return null;
+    const revPct = p1.revenue ? ((p0.revenue - p1.revenue) / Math.abs(p1.revenue)) * 100 : 0;
+    const niPct = p1.net_income ? ((p0.net_income - p1.net_income) / Math.abs(p1.net_income)) * 100 : 0;
+    const revTrend = revPct > 3 ? "up" : revPct < -3 ? "down" : "flat";
+    const niTrend = niPct > 3 ? "up" : niPct < -3 ? "down" : "flat";
+    return { revPct, niPct, revTrend, niTrend, period: `${p0.fiscal_year} ${p0.fiscal_period}` };
+  }
+
+  function computeInsiderTilt(finnode) {
+    if (!finnode || !Array.isArray(finnode.insider) || !finnode.insider.length) return null;
+    const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+    let sales = 0, buys = 0;
+    for (const row of finnode.insider) {
+      const d = row["Start Date"] ? Date.parse(row["Start Date"]) : null;
+      if (d == null || d < cutoff) continue;
+      const text = (row.Text || "").toLowerCase();
+      if (text.startsWith("sale")) sales++;
+      else if (text.startsWith("purchase")) buys++;
+    }
+    if (sales + buys === 0) return null;
+    return { sales, buys, netSelling: sales > buys };
+  }
+
+  function volHeuristicPct(volBucket, holdingType) {
+    const base = ({ low: 0.5, medium: 1.5, high: 3.5 })[volBucket] ?? 1.5;
+    return (holdingType === "ETF" || holdingType === "Fund") ? base * 0.7 : base;
+  }
+
+  function buildPriceOutlook(position, research) {
+    research = research || {};
+    const momVol = research.finnode && research.finnode.prices ? computeMomentumVol(research.finnode.prices) : null;
+    const sentiment = computeSentimentTilt(research.news);
+    const fundTrend = computeFundamentalsTrend(research.financials);
+    const insider = computeInsiderTilt(research.finnode);
+
+    const volPct = (momVol && Number.isFinite(momVol.vol20) && momVol.vol20 > 0)
+      ? momVol.vol20
+      : volHeuristicPct(position.vol_bucket, position.holding_type);
+
+    const comps = [];
+    if (momVol && Number.isFinite(momVol.mom5)) comps.push({ weight: 0.5, score: clamp(momVol.mom5 / 5, -1, 1) });
+    if (sentiment) comps.push({ weight: 0.3, score: clamp(sentiment.avg, -1, 1) });
+    if (fundTrend) {
+      const fscore = (fundTrend.revTrend === "up" ? 0.5 : fundTrend.revTrend === "down" ? -0.5 : 0)
+        + (fundTrend.niTrend === "up" ? 0.5 : fundTrend.niTrend === "down" ? -0.5 : 0);
+      comps.push({ weight: 0.2, score: clamp(fscore, -1, 1) });
+    }
+    let combined = 0;
+    if (comps.length) {
+      const wsum = comps.reduce((s, c) => s + c.weight, 0);
+      combined = comps.reduce((s, c) => s + c.score * (c.weight / wsum), 0);
+    }
+    if (insider && insider.netSelling) combined -= 0.05; // supporting nudge only, never sole driver
+
+    let direction;
+    if (combined > 0.4) direction = "Bullish";
+    else if (combined > 0.12) direction = "Leaning up";
+    else if (combined >= -0.12) direction = "Neutral";
+    else if (combined >= -0.4) direction = "Leaning down";
+    else direction = "Bearish";
+
+    const confidence = momVol ? "High" : (sentiment || fundTrend) ? "Medium" : "Low";
+
+    const rationaleParts = [];
+    if (momVol && Number.isFinite(momVol.mom5)) rationaleParts.push(`5d momentum ${momVol.mom5 >= 0 ? "+" : ""}${momVol.mom5.toFixed(1)}%`);
+    if (sentiment) rationaleParts.push(`${sentiment.count} recent article${sentiment.count > 1 ? "s" : ""} net ${sentiment.avg > 0.1 ? "positive" : sentiment.avg < -0.1 ? "negative" : "mixed"}`);
+    if (fundTrend) rationaleParts.push(`revenue ${fundTrend.revTrend}${fundTrend.niTrend !== fundTrend.revTrend ? `, net income ${fundTrend.niTrend}` : ""}`);
+    if (insider && insider.netSelling) rationaleParts.push(`net insider selling last 30d`);
+    if (!rationaleParts.length) rationaleParts.push(`no public price history — ${position.vol_bucket}-volatility heuristic`);
+
+    const lastPrice = position.last_price || 0;
+    const rangeLow = lastPrice * (1 - volPct / 100);
+    const rangeHigh = lastPrice * (1 + volPct / 100);
+
+    return {
+      symbol: position.symbol, direction, combined, volPct, rangeLow, rangeHigh, confidence,
+      rationale: rationaleParts.join("; "), momVol, sentiment, fundTrend, insider,
+    };
+  }
+
+  /* ===================== Risk assessment (beta) ===================== */
+  // Guide bands: below 0.70 Low · 0.70–1.20 Medium · 1.20–1.70 High · above 1.70 Very high
+  function betaBand(beta) {
+    if (beta == null || !Number.isFinite(beta)) return { band: "Unknown", css: "Unknown" };
+    if (beta < 0.70) return { band: "Low", css: "Low" };
+    if (beta <= 1.20) return { band: "Medium", css: "Medium" };
+    if (beta <= 1.70) return { band: "High", css: "High" };
+    return { band: "Very high", css: "VeryHigh" };
+  }
+  function formatBeta(beta) {
+    if (beta == null || !Number.isFinite(beta)) return "β —";
+    return "β " + beta.toFixed(2);
+  }
+  function betaBadgeHtml(beta, extraStyle) {
+    const b = betaBand(beta);
+    return `<span class="risk-badge ${b.css}"${extraStyle ? ` style="${extraStyle}"` : ""}>${formatBeta(beta)}</span>`;
+  }
+
+  function estimateBeta(position, research) {
+    if (KNOWN_BETAS[position.symbol] != null) {
+      return { beta: KNOWN_BETAS[position.symbol], source: "ref" };
+    }
+    const momVol = research && research.finnode && research.finnode.prices
+      ? computeMomentumVol(research.finnode.prices) : null;
+    // Volatility ratio vs ~1% daily market move — directional stand-in when a published beta isn't on file.
+    if (momVol && Number.isFinite(momVol.vol20) && momVol.vol20 > 0) {
+      return { beta: round2(clamp(momVol.vol20 / 1.0, 0.05, 4.5)), source: "vol" };
+    }
+    if (BOND_LIKE.has(position.symbol) || position.role === "bond") return { beta: 0.15, source: "est" };
+    if (position.role === "us_total" || position.role === "us_large") return { beta: 1.00, source: "est" };
+    if (position.role === "intl" || position.role === "world") return { beta: 0.90, source: "est" };
+    if (DEFENSIVE.has(position.symbol) || position.role === "defensive") return { beta: 0.60, source: "est" };
+    if (HIGH_VOL.has(position.symbol) || position.vol_bucket === "high") return { beta: 1.55, source: "est" };
+    if (position.vol_bucket === "low") return { beta: 0.55, source: "est" };
+    if (position.holding_type === "Fund") return { beta: 0.95, source: "est" };
+    if (position.holding_type === "ETF") return { beta: 1.00, source: "est" };
+    return { beta: 1.05, source: "est" };
+  }
+
+  function computeSectorBuckets(positions) {
+    const total = positions.reduce((s, p) => s + p.value, 0) || 1;
+    const buckets = {};
+    for (const p of positions) {
+      const b = classifySectorBucket(p.role);
+      buckets[b] = (buckets[b] || 0) + p.value;
+    }
+    const rows = Object.entries(buckets).map(([bucket, value]) => ({ bucket, value, pct: (value / total) * 100 }));
+    rows.sort((a, b) => b.pct - a.pct);
+    const EXEMPT = new Set(["Diversified", "Other"]);
+    rows.forEach((r) => { r.flagged = !EXEMPT.has(r.bucket) && r.pct > 25; });
+    return rows;
+  }
+
+  function computeHoldingRisk(position, outlook, maxStockCap, research) {
+    const { beta, source } = estimateBeta(position, research);
+    const { band, css } = betaBand(beta);
+    // Sort/priority score: beta dominates, concentration still nudges trim order.
+    const concPts = Math.min(25, (25 * position.weight_pct) / Math.max(maxStockCap, 1));
+    const score = Math.min(100, beta * 40 + concPts);
+    return { beta, source, band, label: band, css, score };
+  }
+
+  function computePortfolioRisk(positions, holdingRiskMap, sectorBuckets, maxStockCap, outlookMap) {
+    const beta = positions.reduce((s, p) => s + (p.weight_pct / 100) * ((holdingRiskMap[p.symbol] && holdingRiskMap[p.symbol].beta) || 1), 0);
+    const { band, css } = betaBand(beta);
+    let adders = 0;
+    if (sectorBuckets.some((b) => b.flagged)) adders += 0.05;
+    const lowConfValue = positions.filter((p) => outlookMap[p.symbol] && outlookMap[p.symbol].confidence === "Low").reduce((s, p) => s + p.weight_pct, 0);
+    if (lowConfValue > 30) adders += 0.03;
+    const top = positions.reduce((m, p) => Math.max(m, p.weight_pct), 0);
+    if (top > maxStockCap + 2) adders += 0.02;
+    const adjusted = beta + adders;
+    const adjBand = betaBand(adjusted);
+    return {
+      beta: adjusted, rawBeta: beta, band: adjBand.band, label: adjBand.band, css: adjBand.css,
+      score: adjusted, weighted: beta, adders, lowConfValue, top,
+    };
+  }
+
+  function computeStressScenarios(positions, account, equityPct) {
+    const net = account.net_value || positions.reduce((s, p) => s + p.value, 0) + (account.cash || 0);
+    const sorted = [...positions].sort((a, b) => b.value - a.value);
+    const largestPct = sorted[0] ? sorted[0].weight_pct : 0;
+    const top5Pct = sorted.slice(0, 5).reduce((s, p) => s + p.weight_pct, 0);
+    const mk = (scenario, move, pct) => ({ scenario, move, dollarImpact: (net * pct) / 100, pctImpact: pct });
+    return [
+      mk(`Largest holding (${sorted[0] ? sorted[0].symbol : "—"}) drops 20%`, "-20%", largestPct * 0.20),
+      mk("Top 5 holdings each drop 15%", "-15%", top5Pct * 0.15),
+      mk("Broad equity drawdown, bonds flat", "-15%", equityPct * 0.15),
+    ];
+  }
+
+  /* ===================== Shared sizing helpers ===================== */
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function money(n) { return "$" + (n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }); }
+  function money2(n) { return "$" + (n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function toWholeShares(n) {
+    if (n == null || !Number.isFinite(n) || n <= 0) return null;
+    const f = Math.floor(n + 1e-9);
+    return f > 0 ? f : null;
+  }
+  function heldWholeShares(held) {
+    if (!held || !Number.isFinite(held.quantity) || held.quantity <= 0) return 0;
+    return Math.floor(held.quantity + 1e-9);
+  }
+  function formatShares(n) { return (n == null || !Number.isFinite(n) || n <= 0) ? "—" : String(Math.trunc(n)); }
+  function lastCloseFromResearch(research) {
+    const prices = research && research.finnode && research.finnode.prices;
+    if (!Array.isArray(prices) || !prices.length) return 0;
+    for (let i = prices.length - 1; i >= 0; i--) {
+      if (typeof prices[i].Close === "number" && prices[i].Close > 0) return prices[i].Close;
+    }
+    return 0;
+  }
+  function priceOf(positions, symbol, priceMap) {
+    const row = (positions || []).find((p) => p.symbol === symbol);
+    if (row && row.last_price > 0) return row.last_price;
+    if (priceMap && priceMap[symbol] > 0) return priceMap[symbol];
+    return 0;
+  }
+  function sharesFromUsd(usd, price, maxShares) {
+    if (!price || price <= 0 || !usd) return null;
+    let raw = usd / price;
+    if (maxShares != null && Number.isFinite(maxShares) && raw > maxShares) raw = maxShares;
+    return toWholeShares(raw);
+  }
+  function makeRec({ action, symbol, priority, rationale, holding_type, positions, amount_usd, shares, quantity, risk, riskBeta, priceMap }) {
+    const held = (positions || []).find((p) => p.symbol === symbol);
+    const price = priceOf(positions || [], symbol, priceMap);
+    const isExit = ["SELL", "TRIM", "CONSOLIDATE"].includes(action);
+    const maxSellable = isExit ? heldWholeShares(held) : null;
+    let sh = shares;
+    let note = "";
+
+    if (isExit && maxSellable <= 0) return null;
+
+    if (sh == null && quantity != null && ["SELL", "CONSOLIDATE"].includes(action)) {
+      sh = toWholeShares(Math.min(quantity, held ? held.quantity : quantity));
+      if (held && held.quantity > heldWholeShares(held) + 1e-6) {
+        note = " (whole shares only — close any leftover fraction separately if your account still shows one)";
+      }
+    }
+    if (sh == null && amount_usd != null && price > 0) {
+      sh = sharesFromUsd(amount_usd, price, maxSellable);
+    }
+    if (typeof sh === "number") sh = toWholeShares(sh);
+
+    // Hard cap: never recommend selling more whole shares than you hold.
+    if (isExit) {
+      if (sh == null || sh <= 0) return null;
+      if (sh > maxSellable) sh = maxSellable;
+      if (sh <= 0) return null;
+    }
+
+    // Every buy/sell/trim/consolidate must have a concrete whole-share count.
+    if (["BUY", "SELL", "TRIM", "CONSOLIDATE"].includes(action) && (sh == null || sh <= 0)) return null;
+
+    return {
+      action, symbol, priority, rationale: (rationale || "") + note, holding_type: holding_type || "",
+      shares: sh, amount_usd: price > 0 ? round2(sh * price) : (amount_usd == null ? 0 : amount_usd),
+      risk: risk || formatBeta(riskBeta), riskBeta: riskBeta == null ? null : riskBeta,
+      held_qty: held ? held.quantity : null,
+    };
+  }
+
+  /* ===================== Action engine (BUY / SELL / TRIM / CONSOLIDATE / HOLD only — no options, ever) ===================== */
+  function buildPriceMap(positions, researchMap) {
+    const map = {};
+    (positions || []).forEach((p) => { if (p.last_price > 0) map[p.symbol] = p.last_price; });
+    Object.keys(researchMap || {}).forEach((sym) => {
+      if (map[sym] > 0) return;
+      const close = lastCloseFromResearch(researchMap[sym]);
+      if (close > 0) map[sym] = close;
+    });
+    return map;
+  }
+
+  function buildImmediateActions(positions, account, cfg, outlookMap, holdingRiskMap, sectorBuckets, researchMap) {
+    const investable = positions.reduce((s, p) => s + p.value, 0);
+    const cash = account.cash || 0;
+    const net = investable + cash;
+    const types = ["ETF", "Fund", "Stock"];
+    const current_mix = {};
+    types.forEach((t) => { current_mix[t] = net ? (positions.filter((p) => p.holding_type === t).reduce((s, p) => s + p.value, 0) / net) * 100 : 0; });
+    current_mix.Cash = net ? (cash / net) * 100 : 0;
+    const target_mix = { ETF: cfg.etf, Fund: cfg.fund, Stock: cfg.stock, Cash: cfg.cash };
+    const [equity_pct, bond_pct] = bondEquityTargets(cfg.volatility);
+    const bond_value = positions.filter((p) => BOND_LIKE.has(p.symbol)).reduce((s, p) => s + p.value, 0);
+    const current_eb = { equity: investable ? ((investable - bond_value) / investable) * 100 : 0, bond_like: investable ? (bond_value / investable) * 100 : 0 };
+    const gaps = {}; types.forEach((t) => { gaps[t] = target_mix[t] - current_mix[t]; });
+    const menu = BUY_MENU[engineVol(cfg.volatility)];
+    const owned = new Set(positions.map((p) => p.symbol));
+    const typeOrder = [...types].sort((a, b) => gaps[b] - gaps[a]);
+    const priceMap = buildPriceMap(positions, researchMap);
+
+    const riskOf = (sym) => holdingRiskMap[sym] || { beta: 1.0, score: 40, band: "Medium", label: "Medium", css: "Medium", source: "est" };
+    const riskText = (sym) => formatBeta(riskOf(sym).beta);
+    const outlookOf = (sym) => outlookMap[sym] || { confidence: "Low", direction: "Neutral", combined: 0, rationale: "" };
+
+    const actioned = new Set();
+    const remainingSellable = {};
+    positions.forEach((p) => { remainingSellable[p.symbol] = heldWholeShares(p); });
+    const actions = [];
+    let sellBudget = 0;
+    function addAction(rec) {
+      if (!rec) return;
+      if (["SELL", "TRIM", "CONSOLIDATE"].includes(rec.action)) {
+        const left = remainingSellable[rec.symbol] || 0;
+        if (rec.shares > left) rec.shares = left;
+        if (!rec.shares || rec.shares <= 0) return;
+        remainingSellable[rec.symbol] = left - rec.shares;
+        actioned.add(rec.symbol);
+        const px = priceOf(positions, rec.symbol, priceMap);
+        if (px > 0) rec.amount_usd = round2(rec.shares * px);
+        sellBudget += rec.shares * (px || 0);
+      }
+      actions.push(rec);
+    }
+
+    // 1) Stub & deep-loser sells — every holding checked, no sampling
+    for (const row of positions) {
+      if (actioned.has(row.symbol) || ["VTI", "VXUS", "VOO", "FXAIX"].includes(row.symbol)) continue;
+      const reasons = [];
+      if (row.is_tiny && row.value < cfg.minPos) reasons.push(`stub position ($${Math.round(row.value)})`);
+      if (row.is_loser && row.value < 200 && !row.is_core) reasons.push(`deep loser (${row.total_gain_pct.toFixed(0)}%) with tiny size`);
+      if (!reasons.length) continue;
+      const benefit = row.is_tiny
+        ? `Good because this stub (~$${Math.round(row.value)}) is too small to move results but still adds clutter — selling frees cash for core ETFs/funds that actually drive Roth growth.`
+        : `Good because locking in a small deep loser (${row.total_gain_pct.toFixed(0)}%) and redeploying beats holding a dead-weight ticket; Roth trades aren't taxable, so cleanup is cheap.`;
+      addAction(makeRec({
+        action: "SELL", symbol: row.symbol, amount_usd: round2(row.value), quantity: row.quantity, positions, priceMap,
+        priority: row.is_tiny ? 1 : 2, rationale: `${benefit} (${reasons.join("; ")})`, holding_type: row.holding_type, risk: riskText(row.symbol), riskBeta: riskOf(row.symbol).beta,
+      }));
+    }
+
+    // 2) Sector concentration trims — highest-beta names in flagged buckets first
+    for (const bucket of sectorBuckets.filter((b) => b.flagged)) {
+      const members = positions.filter((p) => classifySectorBucket(p.role) === bucket.bucket && !actioned.has(p.symbol) && !p.is_core);
+      members.sort((a, b) => riskOf(b.symbol).beta - riskOf(a.symbol).beta || outlookOf(a.symbol).combined - outlookOf(b.symbol).combined);
+      let excess = (investable * (bucket.pct - 25)) / 100 * 0.5;
+      for (const row of members) {
+        if (excess < 50) break;
+        const cut = Math.min(row.value * 0.4, excess);
+        if (cut < 50) continue;
+        const rec = makeRec({
+          action: "TRIM", symbol: row.symbol, amount_usd: round2(cut), positions, priceMap, priority: 2,
+          rationale: `Good because ${bucket.bucket} is ${bucket.pct.toFixed(0)}% of your book — above the 25% single-sector guideline. Trimming your highest-beta name here (${riskText(row.symbol)}) reduces sector concentration.`,
+          holding_type: row.holding_type, risk: riskText(row.symbol), riskBeta: riskOf(row.symbol).beta,
+        });
+        if (rec) { addAction(rec); excess -= rec.amount_usd; }
+      }
+    }
+
+    // 3) Deteriorating fundamentals + bearish outlook + (over-concentrated or small satellite)
+    for (const row of positions) {
+      if (actioned.has(row.symbol) || row.is_core) continue;
+      const outlook = outlookOf(row.symbol);
+      const fundBad = outlook.fundTrend && outlook.fundTrend.revTrend === "down" && outlook.fundTrend.niTrend === "down";
+      const bearish = outlook.direction === "Bearish" || outlook.direction === "Leaning down";
+      const overConcentrated = row.weight_pct > cfg.maxStock;
+      const smallSatellite = row.weight_pct < 2.5;
+      if (fundBad && bearish && (overConcentrated || smallSatellite)) {
+        const rec = makeRec({
+          action: overConcentrated ? "TRIM" : "SELL", symbol: row.symbol,
+          amount_usd: overConcentrated ? round2(row.value * 0.4) : round2(row.value),
+          quantity: overConcentrated ? null : row.quantity, positions, priceMap, priority: 1,
+          rationale: `Good because fundamentals are deteriorating (revenue and net income both down last period) and the next-day outlook is ${outlook.direction.toLowerCase()} — ${overConcentrated ? "trimming reduces" : "exiting removes"} exposure to a weakening, ${smallSatellite ? "small satellite" : "overweight"} position. (${outlook.rationale})`,
+          holding_type: row.holding_type, risk: riskText(row.symbol), riskBeta: riskOf(row.symbol).beta,
+        });
+        addAction(rec);
+      }
+    }
+
+    // 4) Bond-like overweight vs volatility target
+    if (current_eb.bond_like > bond_pct + 5) {
+      const bondRows = positions.filter((p) => BOND_LIKE.has(p.symbol) && !actioned.has(p.symbol)).sort((a, b) => b.value - a.value);
+      let left = (investable * (current_eb.bond_like - bond_pct)) / 100 * 0.6;
+      for (const row of bondRows) {
+        if (left < 50) break;
+        const cut = Math.min(row.value * 0.5, left);
+        const rec = makeRec({
+          action: "TRIM", symbol: row.symbol, amount_usd: round2(cut), positions, priceMap, priority: 1,
+          rationale: `Good because bond-like holdings are ~${current_eb.bond_like.toFixed(0)}% vs ~${bond_pct.toFixed(0)}% for your ${betaTargetLabel(cfg.volatility)} target. With decades until withdrawal, shifting excess bonds into equities usually raises expected long-run growth inside a Roth.`,
+          holding_type: row.holding_type, risk: riskText(row.symbol), riskBeta: riskOf(row.symbol).beta,
+        });
+        if (rec) { addAction(rec); left -= rec.amount_usd; }
+      }
+    }
+
+    // 5) Type-sleeve overweight trims (ETF / Fund / Stock mix — cash handled via deploy reserve)
+    for (const htype of types) {
+      const sleeveValue = (net * current_mix[htype]) / 100;
+      const targetValue = (net * target_mix[htype]) / 100;
+      const delta = targetValue - sleeveValue;
+      if (delta < -200) {
+        const sleeve = positions.filter((p) => p.holding_type === htype && !actioned.has(p.symbol)).map((p) => {
+          const trim_score = (p.is_core ? -100 : 0) + (KEEP_PREFER.has(p.symbol) ? -50 : 0) + riskOf(p.symbol).beta * 12
+            - clamp(p.total_gain_pct, -80, 80) * 0.2 + p.weight_pct * 0.5;
+          return { ...p, trim_score };
+        }).sort((a, b) => b.trim_score - a.trim_score);
+        let trimLeft = -delta * 0.5;
+        for (const row of sleeve) {
+          if (trimLeft < 50) break;
+          if (row.is_core && htype === "ETF") continue;
+          const cut = Math.min(row.value * 0.4, trimLeft);
+          if (cut < 50) continue;
+          const keepNote = KEEP_PREFER.has(row.symbol) ? " Trimming only enough to rebalance — this stays a quality holding." : " Prefer cutting weaker/non-core names first so quality holdings stay.";
+          const rec = makeRec({
+            action: "TRIM", symbol: row.symbol, amount_usd: round2(cut), positions, priceMap, priority: 2,
+            rationale: `Good because your ${htype} sleeve is overweight (${current_mix[htype].toFixed(0)}% → ${target_mix[htype].toFixed(0)}%). Rebalancing reduces concentration and funds the mix you chose.${keepNote}`,
+            holding_type: htype, risk: riskText(row.symbol), riskBeta: riskOf(row.symbol).beta,
+          });
+          if (rec) { addAction(rec); trimLeft -= rec.amount_usd; }
+        }
+      }
+    }
+
+    // 6) Deploy excess cash + sell proceeds into underweight sleeves — keep target cash % reserved
+    const targetCashUsd = net * ((cfg.cash || 0) / 100);
+    const deployBudget = Math.max(0, cash + sellBudget - targetCashUsd);
+    function pickBuys(budget, limit) {
+      const recs = [];
+      let remaining = budget;
+      if (remaining < 25) return recs;
+      const positiveGapSum = Math.max(types.reduce((s, t) => s + Math.max(gaps[t], 0), 0), 1);
+      for (const htype of typeOrder) {
+        if (remaining < 25 || recs.length >= limit) break;
+        const need = Math.max(gaps[htype], 0);
+        let sleeve = remaining * Math.max(need / positiveGapSum, 0.25);
+        sleeve = Math.min(sleeve, remaining * 0.55);
+        const options = (menu[htype] || []).slice().sort((a, b) => {
+          const ac = (CORE_ETFS[a.symbol] || a.symbol === "FXAIX") ? 0 : 1;
+          const bc = (CORE_ETFS[b.symbol] || b.symbol === "FXAIX") ? 0 : 1;
+          if (ac !== bc) return ac - bc;
+          return (owned.has(a.symbol) ? 1 : 0) - (owned.has(b.symbol) ? 1 : 0);
+        });
+        const priced = options.filter((o) => priceOf(positions, o.symbol, priceMap) > 0);
+        const use = priced.slice(0, 2);
+        if (!use.length) continue;
+        const per = sleeve / Math.max(use.length, 1);
+        for (const opt of use) {
+          if (recs.length >= limit) break;
+          const price = priceOf(positions, opt.symbol, priceMap);
+          if (!price || remaining < price) continue;
+          let targetSh = Math.floor(Math.min(per, remaining) / price);
+          if (targetSh < 1 && remaining >= price) targetSh = 1;
+          if (targetSh < 1) continue;
+          targetSh = Math.min(targetSh, Math.floor(remaining / price));
+          const existing = positions.find((p) => p.symbol === opt.symbol);
+          if (existing) {
+            if (htype === "Stock" && existing.weight_pct >= cfg.maxStock) continue;
+            const existingRisk = riskOf(opt.symbol);
+            if (htype === "Stock" && existingRisk.beta >= 1.20 && existing.weight_pct >= cfg.maxStock * 0.6) continue;
+          }
+          const outlook = outlookOf(opt.symbol);
+          if (htype === "Stock" && outlook.direction === "Bearish") continue;
+          const gapNote = gaps[htype] > 5
+            ? ` Also closes your ${htype} underweight (${current_mix[htype].toFixed(0)}% → ${target_mix[htype].toFixed(0)}%).`
+            : ` Fits your ${betaTargetLabel(cfg.volatility)} Roth target.`;
+          const rec = makeRec({
+            action: "BUY", symbol: opt.symbol, amount_usd: round2(targetSh * price), shares: targetSh, positions, priceMap,
+            priority: 2, rationale: opt.why + gapNote, holding_type: htype, risk: riskText(opt.symbol), riskBeta: riskOf(opt.symbol).beta,
+          });
+          if (rec) { recs.push(rec); remaining -= rec.shares * price; }
+        }
+      }
+      return recs;
+    }
+    const buys = pickBuys(deployBudget, 6);
+    buys.forEach((b) => actions.push(b));
+    let remainingAfterSleeves = deployBudget - buys.reduce((s, b) => s + b.shares * priceOf(positions, b.symbol, priceMap), 0);
+
+    // 7) Core-building with remaining budget
+    const coreTargets = ["VTI", "VXUS"];
+    if (cfg.fund >= 10) coreTargets.push("FXAIX");
+    if (cfg.volatility === "Low") coreTargets.push("BND");
+    if ((cfg.volatility === "High" || cfg.volatility === "VeryHigh") && cfg.etf >= 20) coreTargets.push("QQQ");
+    for (const sym of coreTargets) {
+      if ((cfg.volatility === "High" || cfg.volatility === "VeryHigh") && sym === "BND") continue;
+      const info = CORE_ETFS[sym] || { label: sym };
+      const ownedVal = positions.filter((p) => p.symbol === sym).reduce((s, p) => s + p.value, 0);
+      const targetCore = investable * (sym === "VTI" ? 0.25 : sym === "VXUS" ? 0.12 : 0.08);
+      const gapUsd = targetCore - ownedVal;
+      if (gapUsd <= 100) continue;
+      const price = priceOf(positions, sym, priceMap);
+      if (!price || remainingAfterSleeves < price) continue;
+      const amt = Math.min(gapUsd, remainingAfterSleeves / Math.max(coreTargets.length, 1));
+      const sh = Math.floor(amt / price);
+      if (sh < 1) continue;
+      const rec = makeRec({
+        action: "BUY", symbol: sym, shares: sh, amount_usd: round2(sh * price), positions, priceMap, priority: 3,
+        rationale: `Good because building a larger ${info.label} core (${sym}) makes your Roth simpler and more diversified than many small positions — the reliable path for multi-decade compounding.`,
+        holding_type: sym === "FXAIX" ? "Fund" : "ETF", risk: riskText(sym), riskBeta: riskOf(sym).beta,
+      });
+      if (rec) { actions.push(rec); remainingAfterSleeves -= rec.shares * price; }
+    }
+
+    // 8) Consolidate leftover tiny non-core stock satellites
+    const clutter = positions.filter((p) => !p.is_core && p.holding_type === "Stock" && p.weight_pct < 2.5 && p.value >= 50 && !actioned.has(p.symbol))
+      .sort((a, b) => a.total_gain_pct - b.total_gain_pct);
+    for (const row of clutter) {
+      addAction(makeRec({
+        action: "CONSOLIDATE", symbol: row.symbol, amount_usd: round2(row.value), quantity: row.quantity, positions, priceMap, priority: 3,
+        rationale: `Good because this satellite is only ${row.weight_pct.toFixed(1)}% of the account (${row.total_gain_pct.toFixed(0)}% P/L) — folding it into VTI/VXUS cuts monitoring burden and idiosyncratic risk while keeping market exposure. Roth sales aren't taxed.`,
+        holding_type: "Stock", risk: riskText(row.symbol), riskBeta: riskOf(row.symbol).beta,
+      }));
+    }
+
+    // Final safety pass: every exit must be whole shares and ≤ shares still held in the CSV.
+    const heldQty = {};
+    positions.forEach((p) => { heldQty[p.symbol] = heldWholeShares(p); });
+    const safeActions = [];
+    const soldSoFar = {};
+    for (const a of actions) {
+      if (a.action === "HOLD") { safeActions.push(a); continue; }
+      if (!a.shares || a.shares <= 0) continue;
+      if (["SELL", "TRIM", "CONSOLIDATE"].includes(a.action)) {
+        const maxLeft = (heldQty[a.symbol] || 0) - (soldSoFar[a.symbol] || 0);
+        if (maxLeft <= 0) continue;
+        if (a.shares > maxLeft) a.shares = maxLeft;
+        if (a.shares <= 0) continue;
+        soldSoFar[a.symbol] = (soldSoFar[a.symbol] || 0) + a.shares;
+        const px = priceOf(positions, a.symbol, priceMap);
+        if (px > 0) a.amount_usd = round2(a.shares * px);
+      }
+      safeActions.push(a);
+    }
+
+    if (!safeActions.length) {
+      safeActions.push({ action: "HOLD", symbol: "—", shares: null, amount_usd: 0, priority: 3, holding_type: "", risk: "Low",
+        rationale: "Good because the book is already close to your targets — no trade clears the bar right now." });
+    }
+    safeActions.sort((a, b) => a.priority - b.priority || (b.shares || 0) - (a.shares || 0));
+
+    return {
+      actions: safeActions,
+      hasBuy: safeActions.some((a) => a.action === "BUY"),
+      hasSell: safeActions.some((a) => ["SELL", "TRIM", "CONSOLIDATE"].includes(a.action)),
+      hasFund: safeActions.some((a) => a.holding_type === "Fund"),
+      current_mix, target_mix, equity_bond: current_eb, equity_target: equity_pct, bond_target: bond_pct,
+    };
+  }
+
+  /* ===================== Manager brief builders ===================== */
+  function buildBookHealth(positions, account, cfg, current_mix, target_mix, current_eb, equity_pct, bond_pct) {
+    const diagnostics = [];
+    const n = positions.length;
+    const net = account.net_value || positions.reduce((s, p) => s + p.value, 0) + (account.cash || 0);
+    if (n > 25) diagnostics.push(`You hold ${n} positions — a lot of overlap for ~$${Math.round(net).toLocaleString()}. Consolidating into fewer cores usually helps long-horizon Roth compounding.`);
+    const tinyN = positions.filter((p) => p.is_tiny).length;
+    if (tinyN >= 5) diagnostics.push(`${tinyN} positions are under $100. Tiny stubs barely move returns; recycle them into your target mix.`);
+    if (current_eb.bond_like > bond_pct + 8) diagnostics.push(`Bond-like holdings are ~${current_eb.bond_like.toFixed(0)}% vs a ~${bond_pct.toFixed(0)}% target for ${betaTargetLabel(cfg.volatility)} on a multi-decade Roth.`);
+    if (current_eb.equity < equity_pct - 8) diagnostics.push(`Equity share (~${current_eb.equity.toFixed(0)}%) is below the ~${equity_pct.toFixed(0)}% guideline for your ${betaTargetLabel(cfg.volatility)} setting.`);
+    const top = [...positions].sort((a, b) => b.value - a.value)[0];
+    if (top && top.weight_pct > cfg.maxStock + 2) diagnostics.push(`${top.symbol} is ${top.weight_pct.toFixed(1)}% of the portfolio — above the ~${cfg.maxStock}% single-name soft cap.`);
+    ["ETF", "Fund", "Stock", "Cash"].forEach((t) => {
+      const g = (target_mix[t] || 0) - (current_mix[t] || 0);
+      if (Math.abs(g) >= 5) {
+        const label = t === "Cash" ? "Cash" : `${t}s`;
+        diagnostics.push(`${label} ${g > 0 ? "underweight" : "overweight"} by ${Math.abs(g).toFixed(1)} pp (now ${(current_mix[t] || 0).toFixed(1)}% → target ${(target_mix[t] || 0).toFixed(1)}%).`);
+      }
+    });
+    if (!diagnostics.length) diagnostics.push("No major structural flags.");
+    return diagnostics;
+  }
+
+  function buildMarketPulse(positions, researchMap) {
+    const items = [];
+    const seen = new Set();
+    const cutoff = Date.now() - 14 * 24 * 3600 * 1000;
+    for (const p of positions) {
+      const news = researchMap[p.symbol] && researchMap[p.symbol].news;
+      if (!news || !Array.isArray(news.items)) continue;
+      const recent = news.items.filter((it) => it.published && Date.parse(it.published) >= cutoff).slice(0, 3);
+      for (const it of recent) {
+        if (!it.url || seen.has(it.url)) continue;
+        seen.add(it.url);
+        const score = (it.sentiment && it.sentiment.score) || 0;
+        items.push({ symbol: p.symbol, title: it.title, url: it.url, publisher: (it.publisher && it.publisher.name) || "", score, rank: Math.abs(score) * Math.max(p.weight_pct, 0.1) });
+      }
+    }
+    items.sort((a, b) => b.rank - a.rank);
+    return items.slice(0, 8);
+  }
+
+  function buildFundamentalsFlags(positions, researchMap) {
+    const flags = [];
+    for (const p of positions) {
+      if (p.holding_type !== "Stock") continue;
+      const trend = computeFundamentalsTrend(researchMap[p.symbol] && researchMap[p.symbol].financials);
+      if (!trend) continue;
+      if (trend.revTrend === "down" || trend.niTrend === "down" || (trend.revTrend === "up" && trend.niTrend === "up" && trend.revPct > 8)) {
+        flags.push({ symbol: p.symbol, weight_pct: p.weight_pct, trend });
+      }
+    }
+    flags.sort((a, b) => b.weight_pct - a.weight_pct);
+    return flags.slice(0, 10);
+  }
+
+  /* ===================== Drift tracking (localStorage, never transmitted) ===================== */
+  function hasLocalStorage() { try { return typeof localStorage !== "undefined"; } catch (e) { return false; } }
+  function accountKeySafe(account) { return ((account && account.account) || "default").replace(/[^a-zA-Z0-9]+/g, "_"); }
+  function loadHistory(account) {
+    if (!hasLocalStorage()) return [];
+    try { const raw = localStorage.getItem("rothAdvisorHistory:" + accountKeySafe(account)); return raw ? JSON.parse(raw) : []; }
+    catch (e) { return []; }
+  }
+  function saveSnapshot(account, snapshot) {
+    if (!hasLocalStorage()) return;
+    try {
+      const key = "rothAdvisorHistory:" + accountKeySafe(account);
+      const hist = loadHistory(account);
+      hist.push(snapshot);
+      while (hist.length > 20) hist.shift();
+      localStorage.setItem(key, JSON.stringify(hist));
+    } catch (e) { /* ignore */ }
+  }
+  function clearHistory(account) { if (hasLocalStorage()) { try { localStorage.removeItem("rothAdvisorHistory:" + accountKeySafe(account)); } catch (e) {} } }
+  function buildSnapshot(account, positions, current_mix, equityPct, bondPct, sectorBuckets, portfolioRisk) {
+    return {
+      ts: Date.now(),
+      netValue: account.net_value || positions.reduce((s, p) => s + p.value, 0) + (account.cash || 0),
+      positions: positions.length,
+      equityPct, bondPct,
+      sectorBuckets: sectorBuckets.map((b) => ({ bucket: b.bucket, pct: b.pct })),
+      portfolioRisk: { beta: portfolioRisk.beta, band: portfolioRisk.band, label: portfolioRisk.band, score: portfolioRisk.beta },
+    };
+  }
+  function computeDrift(prev, curr) {
+    if (!prev) return null;
+    const lines = [];
+    const days = Math.max(0, Math.round((curr.ts - prev.ts) / 86400000));
+    const prevBeta = prev.portfolioRisk.beta != null ? prev.portfolioRisk.beta : prev.portfolioRisk.score;
+    const currBeta = curr.portfolioRisk.beta != null ? curr.portfolioRisk.beta : curr.portfolioRisk.score;
+    const prevBand = prev.portfolioRisk.band || prev.portfolioRisk.label;
+    const currBand = curr.portfolioRisk.band || curr.portfolioRisk.label;
+    if (prevBand !== currBand) lines.push(`Portfolio beta risk was <strong>${prevBand}</strong> (${formatBeta(prevBeta)}) last review, now <strong>${currBand}</strong> (${formatBeta(currBeta)}).`);
+    else lines.push(`Portfolio beta moved ${formatBeta(prevBeta)} → ${formatBeta(currBeta)} (still ${currBand}).`);
+    const prevBuckets = {}; prev.sectorBuckets.forEach((b) => { prevBuckets[b.bucket] = b.pct; });
+    for (const b of curr.sectorBuckets) {
+      const before = prevBuckets[b.bucket];
+      if (before != null && Math.abs(b.pct - before) >= 5) lines.push(`${b.bucket} concentration: ${before.toFixed(0)}% → ${b.pct.toFixed(0)}% (${b.pct > before ? "+" : ""}${(b.pct - before).toFixed(0)}pp).`);
+    }
+    const eqDelta = curr.equityPct - prev.equityPct;
+    if (Math.abs(eqDelta) >= 3) lines.push(`Equity exposure: ${prev.equityPct.toFixed(0)}% → ${curr.equityPct.toFixed(0)}%.`);
+    const valDelta = curr.netValue - prev.netValue;
+    const valPct = prev.netValue ? (valDelta / prev.netValue) * 100 : 0;
+    lines.push(`Net value: $${Math.round(prev.netValue).toLocaleString()} → $${Math.round(curr.netValue).toLocaleString()} (${valDelta >= 0 ? "+" : ""}${valPct.toFixed(1)}%).`);
+    if (prev.positions !== curr.positions) lines.push(`Position count: ${prev.positions} → ${curr.positions}.`);
+    return { days, lines };
+  }
+
+  /* ===================== App state & wiring ===================== */
+  const state = {
+    volatility: "High", etf: 50, fund: 15, stock: 30, cash: 5, maxStock: 8, minPos: 150,
+    positions: null, account: null, result: null, running: false,
+    outlookSort: { key: "abs_combined", dir: "desc" },
+  };
+
+  function applyRecommendedSplit(vol) {
+    const split = RECOMMENDED_SPLITS[vol] || RECOMMENDED_SPLITS.High;
+    state.etf = split.etf;
+    state.fund = split.fund;
+    state.stock = split.stock;
+    state.cash = split.cash;
+    $("etf").value = split.etf;
+    $("fund").value = split.fund;
+    $("stock").value = split.stock;
+    $("cash").value = split.cash;
+    const hint = $("splitHint");
+    if (hint) hint.textContent = `Recommended for ${betaTargetLabel(vol)} — tweak if you want.`;
+    syncSliders();
+  }
+
+  function syncSliders() {
+    $("etfVal").textContent = state.etf;
+    $("fundVal").textContent = state.fund;
+    $("stockVal").textContent = state.stock;
+    $("cashVal").textContent = state.cash;
+    $("maxStockVal").textContent = state.maxStock;
+    $("minPosVal").textContent = state.minPos;
+    const sum = state.etf + state.fund + state.stock + state.cash;
+    const pill = $("mixSum");
+    if (sum === 100) { pill.textContent = "Split = 100%"; pill.className = "sum-pill sum-ok"; }
+    else { pill.textContent = `Split = ${sum}% (need 100%)`; pill.className = "sum-pill sum-bad"; }
+    updateRunButton();
+  }
+
+  function updateRunButton() {
+    const sum = state.etf + state.fund + state.stock + state.cash;
+    const ok = Boolean(state.positions) && sum === 100 && !state.running;
+    $("runBtn").disabled = !ok;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  /* ---------- Loading overlay ---------- */
+  function genChartPoints(n, w, h) {
+    n = n || 40; w = w || 400; h = h || 100;
+    let y = h * 0.6;
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      const x = (i / (n - 1)) * w;
+      y += (Math.random() - 0.47) * h * 0.12;
+      y = Math.max(h * 0.08, Math.min(h * 0.92, y));
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    return pts.join(" ");
+  }
+
+  let loadingTimer = null;
+  let stageTextTimeout = null;
+  let stageActive = false;
+  let researchStartedAt = 0;
+
+  function estimateResearchSeconds(positions) {
+    const stocks = positions.filter((p) => p.holding_type === "Stock").length;
+    return stocks * 1.1 + (positions.length - stocks) * 0.55;
+  }
+  function fmtDuration(sec) {
+    sec = Math.max(0, Math.round(sec));
+    if (sec < 60) return `~${sec}s`;
+    return `~${Math.floor(sec / 60)}m ${String(sec % 60).padStart(2, "0")}s`;
+  }
+
+  function showLoadingOverlay() {
+    researchStartedAt = Date.now();
+    $("chartLine").setAttribute("points", genChartPoints());
+    $("chartMask").setAttribute("x", "0");
+    $("chartMask").setAttribute("width", "400");
+    $("loadingPct").textContent = "0%";
+    $("loadingSub").textContent = `Estimated ${fmtDuration(estimateResearchSeconds(state.positions))} for ${state.positions.length} holdings (faster on re-runs — results are cached)`;
+    $("loadingText").textContent = LOADING_LINES[0];
+    $("loadingOverlay").hidden = false;
+    let idx = 1;
+    loadingTimer = setInterval(() => {
+      if (!stageActive) { $("loadingText").textContent = LOADING_LINES[idx % LOADING_LINES.length]; idx++; }
+    }, 1500);
+  }
+  function hideLoadingOverlay() {
+    if (loadingTimer) clearInterval(loadingTimer);
+    loadingTimer = null;
+    $("loadingOverlay").hidden = true;
+  }
+  function setProgress(pct, subText) {
+    pct = clamp(pct, 0, 100);
+    $("loadingPct").textContent = Math.round(pct) + "%";
+    $("chartMask").setAttribute("x", String((pct / 100) * 400));
+    $("chartMask").setAttribute("width", String(400 - (pct / 100) * 400));
+    if (subText != null) $("loadingSub").textContent = subText;
+  }
+  function setStageText(text) {
+    stageActive = true;
+    $("loadingText").textContent = text;
+    if (stageTextTimeout) clearTimeout(stageTextTimeout);
+    stageTextTimeout = setTimeout(() => { stageActive = false; }, 1300);
+  }
+
+  function onResearchProgress(info) {
+    const pct = (info.i / info.total) * 88;
+    const verb = info.stage === "news" ? "Scanning news" : info.stage === "financials" ? "Parsing financials" : "Pulling EOD history";
+    const done = info.i - 1;
+    const elapsed = (Date.now() - researchStartedAt) / 1000;
+    const remaining = done >= 3
+      ? (elapsed / done) * (info.total - done)
+      : estimateResearchSeconds(state.positions.slice(done));
+    setProgress(pct, `${done} of ${info.total} holdings researched · ${fmtDuration(remaining)} left`);
+    setStageText(`${verb} for ${info.symbol} (${info.i}/${info.total})…`);
+  }
+
+  /* ---------- Run analysis ---------- */
+  async function runAnalysisFlow() {
+    if (!state.positions || state.running) return;
+    const sum = state.etf + state.fund + state.stock + state.cash;
+    if (sum !== 100) return;
+
+    state.running = true;
+    updateRunButton();
+    $("runBtn").classList.add("loading");
+    $("runBtn").querySelector("span").textContent = "Running…";
+    showLoadingOverlay();
+
+    try {
+      const cfg = { volatility: state.volatility, etf: state.etf, fund: state.fund, stock: state.stock, cash: state.cash, maxStock: state.maxStock, minPos: state.minPos };
+      const { researchMap, meta } = await researchAllHoldings(state.positions, onResearchProgress, buyCandidateSymbols(cfg.volatility));
+
+      setProgress(90, "Building outlook and risk scores…");
+      setStageText("Running tomorrow's price range on every name…");
+      const outlookMap = {};
+      for (const p of state.positions) outlookMap[p.symbol] = buildPriceOutlook(p, researchMap[p.symbol]);
+
+      const sectorBuckets = computeSectorBuckets(state.positions);
+      const holdingRiskMap = {};
+      for (const p of state.positions) holdingRiskMap[p.symbol] = computeHoldingRisk(p, outlookMap[p.symbol], cfg.maxStock, researchMap[p.symbol]);
+
+      const [equity_pct] = bondEquityTargets(cfg.volatility);
+      const bond_value = state.positions.filter((p) => BOND_LIKE.has(p.symbol)).reduce((s, p) => s + p.value, 0);
+      const investable = state.positions.reduce((s, p) => s + p.value, 0);
+      const currentEquityPct = investable ? ((investable - bond_value) / investable) * 100 : 0;
+
+      const portfolioRisk = computePortfolioRisk(state.positions, holdingRiskMap, sectorBuckets, cfg.maxStock, outlookMap);
+      const stress = computeStressScenarios(state.positions, state.account, currentEquityPct);
+
+      setProgress(95, "Writing the ticket list…");
+      setStageText("Writing the morning ticket list…");
+      const actionResult = buildImmediateActions(state.positions, state.account, cfg, outlookMap, holdingRiskMap, sectorBuckets, researchMap);
+      const bookHealth = buildBookHealth(state.positions, state.account, cfg, actionResult.current_mix, actionResult.target_mix, actionResult.equity_bond, actionResult.equity_target, actionResult.bond_target);
+      const marketPulse = buildMarketPulse(state.positions, researchMap);
+      const fundaFlags = buildFundamentalsFlags(state.positions, researchMap);
+
+      const history = loadHistory(state.account);
+      const prevSnapshot = history.length ? history[history.length - 1] : null;
+      const newSnapshot = buildSnapshot(state.account, state.positions, actionResult.current_mix, currentEquityPct, 100 - currentEquityPct, sectorBuckets, portfolioRisk);
+      const drift = computeDrift(prevSnapshot, newSnapshot);
+      saveSnapshot(state.account, newSnapshot);
+
+      setProgress(100, "Done.");
+      setStageText("Markets checked. Ticket list ready.");
+
+      state.result = { cfg, outlookMap, holdingRiskMap, sectorBuckets, portfolioRisk, stress, actionResult, bookHealth, marketPulse, fundaFlags, meta, drift };
+      await sleep(450);
+      renderResults();
+    } catch (err) {
+      $("empty").hidden = false;
+      $("empty").textContent = "Analysis failed unexpectedly: " + (err && err.message ? err.message : err);
+      $("results").hidden = true;
+    } finally {
+      hideLoadingOverlay();
+      state.running = false;
+      $("runBtn").classList.remove("loading");
+      $("runBtn").querySelector("span").textContent = "Run analysis";
+      updateRunButton();
+    }
+  }
+
+  /* ---------- Rendering ---------- */
+  function renderResults() {
+    const r = state.result;
+    $("empty").hidden = true;
+    $("results").hidden = false;
+
+    const net = state.account.net_value || state.positions.reduce((s, p) => s + p.value, 0) + (state.account.cash || 0);
+    $("kpis").innerHTML = [
+      ["Net value", money(net)],
+      ["Cash", `${money(state.account.cash || 0)} <span class="muted" style="font-size:0.7rem">target ${r.cfg.cash}%</span>`],
+      ["Positions", String(state.positions.length)],
+      ["Portfolio β", betaBadgeHtml(r.portfolioRisk.beta)],
+      ["Equity now", r.actionResult.equity_bond.equity.toFixed(0) + "%"],
+      ["Equity target", r.actionResult.equity_target.toFixed(0) + "%"],
+    ].map(([lbl, val]) => `<div class="kpi"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`).join("");
+
+    renderDrift(r.drift);
+    $("diagnostics").innerHTML = r.bookHealth.map((d) => `<li>${escapeHtml(d)}</li>`).join("");
+
+    const freshBits = [];
+    freshBits.push(`CSV read ${new Date(state.csvReadAt || Date.now()).toLocaleString()}`);
+    if (r.meta.finnodeUpdated) freshBits.push(`Fin-node snapshot as of ${new Date(r.meta.finnodeUpdated).toLocaleString()}`);
+    if (r.meta.quotelinksUpdated) freshBits.push(`Quotelinks news as of ${new Date(r.meta.quotelinksUpdated).toLocaleString()}`);
+    $("freshnessLine").textContent = "Data freshness — " + freshBits.join(" · ") + ". The next-day outlook is built on public end-of-day data, which may lag your CSV's own last price.";
+
+    renderRisk(r.portfolioRisk, r.sectorBuckets, r.stress);
+    renderPulse(r.marketPulse);
+    renderFunda(r.fundaFlags);
+    renderOutlook();
+    renderActions(r.actionResult);
+    renderHoldings();
+  }
+
+  function renderDrift(drift) {
+    const panel = $("driftPanel");
+    if (!drift) { panel.hidden = true; return; }
+    panel.hidden = false;
+    $("driftList").innerHTML = `<li>${drift.lines.join("</li><li>")}</li>` + (drift.days ? `` : "");
+    panel.querySelector("h2").innerHTML = `Since your last review <small>(${drift.days} day${drift.days === 1 ? "" : "s"} ago)</small>`;
+  }
+
+  function renderRisk(portfolioRisk, sectorBuckets, stress) {
+    const band = portfolioRisk.band || betaBand(portfolioRisk.beta).band;
+    $("riskHeadline").innerHTML = `${betaBadgeHtml(portfolioRisk.beta, "font-size:0.95rem;padding:5px 12px")}
+      <span class="muted" style="margin-left:10px">${band} risk — value-weighted average beta across the book (market = 1.00), with small adders for sector concentration / thin data coverage.</span>`;
+
+    $("sectorBars").innerHTML = sectorBuckets.map((b) => `
+      <div class="bar-row">
+        <div>${escapeHtml(b.bucket)}${b.flagged ? " ⚠" : ""}</div>
+        <div class="track"><div class="fill-cur${b.flagged ? " flagged" : ""}" style="width:${Math.min(b.pct, 100)}%"></div></div>
+        <div class="num">${b.pct.toFixed(0)}%</div>
+      </div>`).join("") + `<p class="muted" style="margin:8px 0 0">⚠ = non-diversified sector bucket over 25% of the portfolio. "Other" is a mixed-theme catch-all, not flagged as a single-sector bet.</p>`;
+
+    $("stressTable").innerHTML = `<table class="stress-table">
+      <thead><tr><th>Scenario</th><th>Assumed move</th><th class="num">Portfolio $ impact</th><th class="num">Portfolio % impact</th></tr></thead>
+      <tbody>${stress.map((s) => `<tr><td>${escapeHtml(s.scenario)}</td><td class="mono">${s.move}</td><td class="num">-${money(s.dollarImpact)}</td><td class="num">-${s.pctImpact.toFixed(1)}%</td></tr>`).join("")}</tbody>
+    </table>
+    <p class="muted" style="margin-top:8px">Simple weight-based shocks, not a correlation/backtested model — free data doesn't provide a covariance matrix. Treat as "what this would mean in dollars," not a prediction.</p>`;
+  }
+
+  function renderPulse(items) {
+    if (!items.length) { $("pulseList").innerHTML = `<p class="muted">No recent headlines surfaced for your holdings.</p>`; return; }
+    $("pulseList").innerHTML = items.map((it) => {
+      const cls = it.score > 0.1 ? "sent-pos" : it.score < -0.1 ? "sent-neg" : "sent-neu";
+      return `<div class="news-item">
+        <div class="sym">${escapeHtml(it.symbol)}</div>
+        <div><a href="${escapeHtml(it.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(it.title)}</a>
+          <div class="pub">${escapeHtml(it.publisher)} · <span class="${cls}">${it.score >= 0 ? "+" : ""}${it.score.toFixed(2)} sentiment</span></div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderFunda(flags) {
+    if (!flags.length) { $("fundaList").innerHTML = `<li>No stock-type holdings with a clear revenue/earnings trend flag this run.</li>`; return; }
+    $("fundaList").innerHTML = flags.map((f) => {
+      const t = f.trend;
+      const dir = (t.revTrend === "down" || t.niTrend === "down") ? "deteriorating" : "improving";
+      return `<li><strong>${escapeHtml(f.symbol)}</strong> (${f.weight_pct.toFixed(1)}% of book) — ${dir}: revenue ${t.revPct >= 0 ? "+" : ""}${t.revPct.toFixed(1)}%, net income ${t.niPct >= 0 ? "+" : ""}${t.niPct.toFixed(1)}% vs prior quarter (${t.period}).</li>`;
+    }).join("");
+  }
+
+  const OUTLOOK_COLUMNS = [
+    { key: "symbol", label: "Symbol" },
+    { key: "holding_type", label: "Type" },
+    { key: "risk", label: "Risk" },
+    { key: "direction", label: "Direction" },
+    { key: "range", label: "Expected range" },
+    { key: "confidence", label: "Confidence" },
+    { key: "rationale", label: "Rationale" },
+  ];
+
+  function renderOutlook() {
+    const r = state.result;
+    let rows = state.positions.map((p) => {
+      const o = r.outlookMap[p.symbol];
+      const risk = r.holdingRiskMap[p.symbol];
+      return {
+        symbol: p.symbol, holding_type: p.holding_type, beta: risk.beta, risk_score: risk.beta,
+        direction: o.direction, abs_combined: Math.abs(o.combined), combined: o.combined,
+        rangeLow: o.rangeLow, rangeHigh: o.rangeHigh, volPct: o.volPct, confidence: o.confidence, rationale: o.rationale,
+      };
+    });
+    const sort = state.outlookSort;
+    rows.sort((a, b) => {
+      let av = a[sort.key], bv = b[sort.key];
+      if (typeof av === "string") { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      return sort.dir === "asc" ? cmp : -cmp;
+    });
+
+    const dirClass = (d) => d === "Bullish" ? "dir-up" : d === "Leaning up" ? "dir-up" : d === "Neutral" ? "dir-neutral" : d === "Leaning down" ? "dir-down" : "dir-bearish";
+
+    const header = `<tr>
+      <th class="sortable" data-k="symbol">Symbol${sortArrow("symbol")}</th>
+      <th class="sortable" data-k="holding_type">Type${sortArrow("holding_type")}</th>
+      <th class="sortable" data-k="beta">Beta${sortArrow("beta")}</th>
+      <th class="sortable" data-k="abs_combined">Direction${sortArrow("abs_combined")}</th>
+      <th class="num">Expected range</th>
+      <th class="sortable" data-k="confidence">Confidence${sortArrow("confidence")}</th>
+      <th>Rationale</th>
+    </tr>`;
+
+    $("outlookWrap").innerHTML = `<table>
+      <thead>${header}</thead>
+      <tbody>${rows.map((o) => `<tr>
+        <td class="mono">${escapeHtml(o.symbol)}</td>
+        <td>${escapeHtml(o.holding_type)}</td>
+        <td>${betaBadgeHtml(o.beta)}</td>
+        <td><span class="dir ${dirClass(o.direction)}">${escapeHtml(o.direction)}</span></td>
+        <td class="num">${money2(o.rangeLow)} – ${money2(o.rangeHigh)} <span class="muted">(±${o.volPct.toFixed(1)}%)</span></td>
+        <td><span class="conf-tag">${o.confidence}</span></td>
+        <td>${escapeHtml(o.rationale)}</td>
+      </tr>`).join("")}</tbody>
+    </table>`;
+
+    $("outlookWrap").querySelectorAll("th.sortable").forEach((th) => {
+      th.addEventListener("click", () => {
+        const k = th.dataset.k;
+        if (state.outlookSort.key === k) state.outlookSort.dir = state.outlookSort.dir === "asc" ? "desc" : "asc";
+        else state.outlookSort = { key: k, dir: "desc" };
+        renderOutlook();
+      });
+    });
+  }
+  function sortArrow(key) {
+    if (state.outlookSort.key !== key) return "";
+    return `<span class="arrow">${state.outlookSort.dir === "asc" ? "▲" : "▼"}</span>`;
+  }
+
+  function renderActions(actionResult) {
+    const notes = [];
+    if (actionResult.hasBuy && actionResult.hasSell) notes.push(`<div class="note-box">This list pairs sells/trims with buys in the same run. In a cash IRA, proceeds from a same-day sell may not have settled yet to fund a same-day buy (T+1 settlement) — you may need to place sells first and buys once funds settle.</div>`);
+    if (actionResult.hasFund) notes.push(`<div class="note-box">Mutual fund orders execute once daily at the next-calculated NAV, not intraday like stocks/ETFs — expect the fill price to be set after market close.</div>`);
+    $("actionNotes").innerHTML = notes.join("");
+
+    const recs = actionResult.actions;
+    $("actionTable").innerHTML = `<table>
+      <thead><tr><th>Priority</th><th>Action</th><th>Symbol</th><th class="num">Shares to trade</th><th class="num">You hold</th><th>Type</th><th>Beta</th><th>Why this is good</th></tr></thead>
+      <tbody>${recs.map((r) => {
+        const shareLabel = r.shares ? `${r.action} ${r.shares}` : r.action;
+        const heldLabel = (r.held_qty != null && Number.isFinite(r.held_qty))
+          ? (Number.isInteger(r.held_qty) ? String(r.held_qty) : r.held_qty.toFixed(3).replace(/\.?0+$/, ""))
+          : "—";
+        const betaVal = r.riskBeta != null ? r.riskBeta : null;
+        return `<tr>
+        <td class="mono">${r.priority}</td>
+        <td><span class="badge ${r.action}">${escapeHtml(shareLabel)}</span></td>
+        <td class="mono">${escapeHtml(r.symbol)}</td>
+        <td class="num"><strong>${formatShares(r.shares)}</strong>${r.shares ? " sh" : ""}</td>
+        <td class="num">${escapeHtml(heldLabel)}</td>
+        <td>${escapeHtml(r.holding_type || "—")}</td>
+        <td>${betaBadgeHtml(betaVal)}</td>
+        <td>${escapeHtml(r.rationale)}</td>
+      </tr>`;
+      }).join("")}</tbody>
+    </table>`;
+
+    const buyN = recs.filter((r) => r.action === "BUY" && r.shares).length;
+    const sellN = recs.filter((r) => ["SELL", "TRIM", "CONSOLIDATE"].includes(r.action) && r.shares).length;
+    const buySh = recs.filter((r) => r.action === "BUY").reduce((s, r) => s + (r.shares || 0), 0);
+    const sellSh = recs.filter((r) => ["SELL", "TRIM", "CONSOLIDATE"].includes(r.action)).reduce((s, r) => s + (r.shares || 0), 0);
+    $("actionTotals").innerHTML = `<span>Buy lines: <strong>${buyN}</strong> (${formatShares(buySh)} sh total)</span><span>Sell/trim/consolidate: <strong>${sellN}</strong> (${formatShares(sellSh)} sh total)</span><span class="muted">Whole shares only · sell/trim never exceeds shares you hold · no options</span>`;
+  }
+
+  function renderHoldings() {
+    const r = state.result;
+    const rows = [...state.positions].sort((a, b) => b.value - a.value);
+    $("holdings").innerHTML = `<table>
+      <thead><tr><th>Symbol</th><th>Type</th><th>Sector</th><th>Beta</th><th class="num">Value</th><th class="num">Weight</th><th class="num">Total gain %</th></tr></thead>
+      <tbody>${rows.map((p) => `<tr>
+        <td class="mono">${p.symbol}${p.is_core ? " ★" : ""}</td>
+        <td>${p.holding_type}</td>
+        <td>${escapeHtml(classifySectorBucket(p.role))}</td>
+        <td>${betaBadgeHtml(r.holdingRiskMap[p.symbol].beta)}</td>
+        <td class="num">${money2(p.value)}</td>
+        <td class="num">${p.weight_pct.toFixed(2)}%</td>
+        <td class="num">${p.total_gain_pct.toFixed(1)}%</td>
+      </tr>`).join("")}</tbody>
+    </table>`;
+  }
+
+  /* ---------- CSV load ---------- */
+  function loadText(text, name) {
+    try {
+      const parsed = parseEtradeCSV(text);
+      state.positions = parsed.positions;
+      state.account = parsed.account;
+      state.csvReadAt = Date.now();
+      $("fileName").textContent = name || "portfolio.csv";
+      $("empty").hidden = false;
+      $("empty").textContent = "CSV loaded. Set your mix and click Run analysis.";
+      $("results").hidden = true;
+      updateRunButton();
+    } catch (err) {
+      $("empty").hidden = false;
+      $("empty").textContent = "Could not parse CSV: " + err.message;
+      $("results").hidden = true;
+      state.positions = null;
+      updateRunButton();
+    }
+  }
+
+  /* ---------- Event wiring ---------- */
+  $("etf").addEventListener("input", (e) => { state.etf = +e.target.value; syncSliders(); });
+  $("fund").addEventListener("input", (e) => { state.fund = +e.target.value; syncSliders(); });
+  $("stock").addEventListener("input", (e) => { state.stock = +e.target.value; syncSliders(); });
+  $("cash").addEventListener("input", (e) => { state.cash = +e.target.value; syncSliders(); });
+  $("maxStock").addEventListener("input", (e) => { state.maxStock = +e.target.value; syncSliders(); });
+  $("minPos").addEventListener("input", (e) => { state.minPos = +e.target.value; syncSliders(); });
+
+  document.querySelectorAll("#volSeg button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#volSeg button").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.volatility = btn.dataset.vol;
+      applyRecommendedSplit(state.volatility);
+    });
+  });
+
+  $("runBtn").addEventListener("click", runAnalysisFlow);
+
+  $("clearHistoryBtn").addEventListener("click", () => {
+    clearHistory(state.account);
+    $("driftPanel").hidden = true;
+  });
+
+  const drop = $("drop");
+  const fileInput = $("fileInput");
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") fileInput.click(); });
+  fileInput.addEventListener("change", () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    f.text().then((t) => loadText(t, f.name));
+  });
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("drag"); }));
+  drop.addEventListener("drop", (e) => {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!f) return;
+    f.text().then((t) => loadText(t, f.name));
+  });
+
+  applyRecommendedSplit(state.volatility);
+  updateRunButton();
+
+  // Expose for lightweight external testing (Node sanity checks), harmless in browser.
+  if (typeof module !== "undefined") {
+    module.exports = {
+      parseEtradeCSV, classifyType, classifyVol, classifyRole, classifySectorBucket,
+      computeMomentumVol, computeSentimentTilt, computeFundamentalsTrend, computeInsiderTilt,
+      buildPriceOutlook, computeSectorBuckets, computeHoldingRisk, computePortfolioRisk, computeStressScenarios,
+      estimateBeta, betaBand, formatBeta,
+      buildImmediateActions, buildBookHealth, buildMarketPulse, buildFundamentalsFlags, researchAllHoldings,
+      computeDrift, buildSnapshot, toWholeShares, sharesFromUsd, makeRec, bondEquityTargets,
+    };
+  }
+})();
+</script>
+</body>
+</html>
